@@ -1,0 +1,1120 @@
+---
+title: "Macrosystem_visuals"
+author: "sbsambado"
+date: "9/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list=ls())
+
+# install.packages('geoNEON')
+# library(neonUtilities)
+# library(tidyverse)
+# library(geoNEON)
+# library(metScanR)
+
+```
+
+
+```{r}
+#All sites: pull in zip files (only need to do once, unless updating your files with newly available NEON data)
+# zipsByProduct(dpID="DP1.10093.001", site="all", package="basic", check.size=T) # ticks
+# zipsByProduct(dpID="DP1.10092.001", site="all", package="basic", check.size=T) # tick pathogens
+# zipsByProduct(dpID="DP1.10072.001", site="all", package="basic", check.size=T) # mammals
+# zipsByProduct(dpID="DP1.00098.001", site="all", package="basic", check.size=T) # relative humidity
+# zipsByProduct(dpID="DP1.00006.001", site="all", package="basic", check.size=T) # precip
+# zipsByProduct(dpID="DP1.00002.001", site="all", package="basic", check.size=T) # air temp
+# 
+# ### stack data: (only need to do once, unless updating your files with newly available NEON data)
+# stackByTable(filepath="/Users/samanthasambado/Macrosystems/filesToStack10093", folder=T)  # ticks
+# stackByTable(filepath="/Users/samanthasambado/Macrosystems/filesToStack10072", folder=T) # mammals
+# stackByTable(filepath="/Users/samanthasambado/Macrosystems/filesToStack10092", folder=T) # tick pathogens
+
+## stackByTable(filepath="/Users/samanthasambado/Macrosystems/filesToStack00098", folder=T)  # relative humidity
+
+# stackByTable(filepath="/Users/samanthasambado/Macrosystems/filesToStack00006", folder=T) # precip
+# stackByTable(filepath="/Users/samanthasambado/Macrosystems/filesToStack00002", folder=T) # air temp
+
+```
+
+
+```{r}
+
+### pull in csv's from above:
+
+# ticks
+ticks <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_fielddata.csv", header=T)
+head(ticks)
+unique(ticks$siteID)
+tail(ticks)
+nrow(ticks)
+
+# tick taxa
+ticks_taxa <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_taxonomyProcessed.csv", header=T)
+head(ticks_taxa)
+nrow(ticks_taxa)
+
+# mammals
+mams <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10072/stackedFiles/mam_pertrapnight.csv", header=T)
+head(mams)
+nrow(mams)
+
+# tick pathogens
+tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)
+head(tick_path)
+nrow(tick_path)
+
+
+# need to stack RH data
+#RH <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack00098/stackedFiles/RH_30min.csv", header=T)
+#head(RH)
+#nrow(RH)
+```
+
+
+```{r}
+
+############## working thorugh tick taxa data frame #######
+unique(ticks_taxa$scientificName)
+nrow(ticks_taxa)
+
+
+############## site selection #######
+#extract plotID
+ticks_taxa$site <- substr(ticks_taxa$plotID, 1, 4)
+
+# how many unique sites
+unique(ticks_taxa$site)
+
+# select sites that use this criteria
+ticks_taxa_E <- ticks_taxa[which(ticks_taxa$site == 'BART' | ticks_taxa$site == 'HARV' | ticks_taxa$site == 'BLAN' | ticks_taxa$site == 'SCBI' | ticks_taxa$site == 'SERC' | ticks_taxa$site == 'OSBS' | ticks_taxa$site == 'STEI' | ticks_taxa$site == 'TREE' | ticks_taxa$site == 'UNDE' | ticks_taxa$site == 'GRSM' | ticks_taxa$site == 'MLBS' | ticks_taxa$site == 'ORNL' | ticks_taxa$site == 'TALL'),]
+
+
+############## tick selection #######
+
+# select deva
+DVAR <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Dermacentor variabilis'),]
+nrow(DVAR)
+head(DVAR)
+
+# select deva larvae
+DVAR_L <- DVAR[which(DVAR$sexOrAge == 'Larva'),]
+nrow(DVAR_L)
+
+# select deva nymphs
+DVAR_N <- DVAR[which(DVAR$sexOrAge == 'Nymph'),]
+nrow(DVAR_N)
+
+# select iscap
+ISCP <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Ixodes scapularis'),]
+nrow(ISCP)
+
+# select amblyomma
+AAM <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Amblyomma americanum'),]
+nrow(AAM)
+
+# select amblyomma larva
+AAM_L <- AAM[which(AAM$sexOrAge == 'Larva'),]
+nrow(AAM_L)
+
+# select amblyomma nymph
+AAM_N <- AAM[which(AAM$sexOrAge == 'Nymph'),]
+nrow(AAM_N)
+
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract certain plots
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+head(ticks_taxa)
+
+plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+
+# select columns
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+View(head(ticks_taxa2, n=20))
+nrow(ticks_taxa2)
+
+
+############## aggregating ixodes life stages #######
+
+######## Ixodes 
+
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+head(I_scap_N)
+nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+head(I_scap_N)
+
+I_scap_N_2017 <- I_scap_N[which(I_scap_N$Year == '2017'),]
+head(I_scap_N_2017)
+
+I_scap_N_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_N, FUN=sum)
+head(I_scap_N_col, n=20)
+nrow(I_scap_N_col)
+
+#Larvae:
+I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva'),]
+head(I_scap_L)
+nrow(I_scap_L)
+
+sapply(I_scap_L, class)
+I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
+
+I_scap_L$collectDate <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-7)
+head(I_scap_L)
+
+I_scap_L$collectDate <- as.factor(I_scap_L$collectDate)
+I_scap_L$plotID <- unlist(I_scap_L$plotID)
+
+
+I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
+# extracting year out of collectDate
+I_scap_L$Year <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-6)
+
+head(I_scap_L)
+
+I_scap_L_2017 <- I_scap_L[which(I_scap_L$Year == '2017'),]
+head(I_scap_L_2017)
+
+I_scap_L_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_L, FUN=sum)
+head(I_scap_L_col, n=20)
+nrow(I_scap_L_col)
+
+View(I_scap_L_col)
+
+
+#Adults
+I_scap_A <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Female' | ticks_taxa2$sexOrAge == 'Male'),]
+I_scap_A <- I_scap_A[which(I_scap_A$scientificName == 'Ixodes scapularis'),]
+head(I_scap_A)
+nrow(I_scap_A)
+sapply(I_scap_A, class)
+I_scap_A$collectDate <- as.character(I_scap_A$collectDate)
+
+I_scap_A$collectDate <- substr(I_scap_A$collectDate, 1, nchar(I_scap_A$collectDate)-7)
+head(I_scap_A)
+I_scap_A$collectDate <- as.factor(I_scap_A$collectDate)
+I_scap_A$plotID <- unlist(I_scap_A$plotID)
+I_scap_A$collectDate <- as.character(I_scap_A$collectDate)
+I_scap_A$Year <- substr(I_scap_A$collectDate, 1, nchar(I_scap_A$collectDate)-6)
+head(I_scap_A)
+
+I_scap_A_2017 <- I_scap_A[which(I_scap_A$Year == '2017'),]
+head(I_scap_A_2017)
+
+I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_A, FUN=sum)
+head(I_scap_A_col, n=20)
+nrow(I_scap_A_col)
+
+```
+
+```{r}
+#################### PLOT ####################
+#library(ggplot2)
+#library(tidyverse)
+plot <- ggplot(I_scap_N, aes(collectDate, individualCount)) + geom_jitter(aes(colour=plotID), size=2)
+plotN <- ggplot(I_scap_N, aes(collectDate, individualCount, group=plotID, colour=plotID)) + geom_line(size=1.5) + facet_wrap(~plotID)
+plotN
+
+plotN <- ggplot(I_scap_N, aes(collectDate, individualCount, group=site, colour=site)) + geom_line(size=1.5) + facet_wrap(~site)
+plotN
+
+plotL <- ggplot(I_scap_L, aes(collectDate, individualCount, group=plotID, colour=plotID)) + geom_line(size=1.5) + 
+  #scale_y_continuous(limits=c(0,100)) +
+  facet_wrap(~plotID)
+plotL
+
+plotA <- ggplot(I_scap_A, aes(collectDate, individualCount, group=plotID, colour=plotID)) + geom_line(size=1.5) + facet_wrap(~plotID)
+plotA
+
+#*should divide by area sampled as it's not always the same...
+
+```
+
+
+
+```{r}
+######### Tick pathogens
+tick_path <- tick_path[,c(4,5,7,8,9,14,18,20,23,24)]
+head(tick_path, n=20)
+unique(tick_path$testPathogenName)
+
+# select for LD spirochetes
+tick_path_Bb <- tick_path[which(tick_path$testPathogenName == 'Borrelia burgdorferi' | tick_path$testPathogenName == 'Borrelia burgdorferi sensu lato' | tick_path$testPathogenName == 'Borrelia sp.'),]
+
+nrow(tick_path_Bb)
+
+
+tick_path_Bb_pos <- tick_path_Bb[which(tick_path_Bb$testResult == 'Positive'),]
+nrow(tick_path_Bb_pos)
+unique(tick_path_Bb_pos$siteID)
+
+### I added these lines 
+tick_path_Bm <- tick_path[which(tick_path$testPathogenName == 'Borrelia miyamotoi'),]
+tick_path_Bm_pos <- tick_path_Bm[which(tick_path_Bm$testResult == 'Positive'),]
+nrow(tick_path_Bm_pos)
+#########################
+
+
+
+tick_path_Bb$incidence <- ifelse(tick_path_Bb$testResult == 'Positive', 1, 0)
+tick_path_Bb$collectDate <- as.character(tick_path_Bb$collectDate)
+tick_path_Bb$Date <- substr(tick_path_Bb$collectDate, 1, nchar(tick_path_Bb$collectDate)-7)
+head(tick_path_Bb)
+nrow(tick_path_Bb)
+
+tick_path_Bb_col <- aggregate(incidence ~ plotID + Date, data=tick_path_Bb, FUN=mean)
+head(tick_path_Bb_col, n=20)
+nrow(tick_path_Bb_col)
+
+tick_path_Bb_col$plotID <- as.character(tick_path_Bb_col$plotID)
+tick_path_Bb_col$site <- substr(tick_path_Bb_col$plotID, 1, nchar(tick_path_Bb_col$plotID)-4)
+head(tick_path_Bb_col)
+
+tick_path_Bb_col_E <- tick_path_Bb_col[which(tick_path_Bb_col$site != 'DELA' & tick_path_Bb_col$site != 'KONA' & tick_path_Bb_col$site != 'KONZ' & tick_path_Bb_col$site != 'LENO' & tick_path_Bb_col$site != 'UKFS'),]
+
+head(tick_path_Bb_col_E)
+nrow(tick_path_Bb_col_E)
+unique(tick_path_Bb_col_E$site)
+
+#plot:
+#plotInc <- ggplot(tick_path_Bb_col_E, aes(Date, incidence, group=plotID, colour=plotID)) + geom_line(size=1.5) + facet_wrap(~plotID)
+#plotInc
+```
+
+
+```{r}
+### Mammals:
+head(mams)
+nrow(mams)
+unique(mams$trapStatus)
+mamsTrap <- mams[,c(5,6,10,11,16,18,20,21,22,23,29,42,43,44)]
+head(mamsTrap, n=20)
+mamsTrap$statusCode <- substr(mamsTrap$trapStatus, 0, 1)
+head(mamsTrap, n=50)
+
+mamsTrap$capture <- ifelse(mamsTrap$statusCode == '5', 1, ifelse(mamsTrap$trapStatus == '4', 1, 0))
+head(mamsTrap)
+
+
+unique(mamsTrap$nymphalTicksAttached)
+mamsTrap$larvaeYN <- ifelse(mamsTrap$larvalTicksAttached == 'Y', 1, 0)
+mamsTrap$nymphsYN <- ifelse(mamsTrap$nymphalTicksAttached == 'Y', 1, 0)
+mamsTrap$adultsYN <- ifelse(mamsTrap$adultTicksAttached == 'Y', 1, 0)
+head(mamsTrap)
+
+mamsTrap_captures <- mamsTrap[which(mamsTrap$capture == 1),]
+nrow(mamsTrap_captures)
+head(mamsTrap_captures)
+
+mamsTrap_col <- aggregate(capture ~ plotID + collectDate, data=mamsTrap, FUN=mean)
+nrow(mamsTrap_col)
+head(mamsTrap_col)
+
+
+mamsTrap_col$site <- substr(mamsTrap_col$plotID, 1, 4)
+head(mamsTrap_col)
+unique(mamsTrap_col$site)
+
+
+mamsTrap_col_E <- mamsTrap_col[which(mamsTrap_col$site == 'HARV' | mamsTrap_col$site == 'OSBS' | mamsTrap_col$site == 'BART' | mamsTrap_col$site == 'ORNL' | mamsTrap_col$site == 'TALL' | mamsTrap_col$site == 'SCBI' | mamsTrap_col$site == 'UNDE' | mamsTrap_col$site == 'SERC' | mamsTrap_col$site == 'GRSM' | mamsTrap_col$site == 'BLAN' | mamsTrap_col$site == 'TREE' | mamsTrap_col$site == 'STEI' | mamsTrap_col$site == 'MLBS'),]
+unique(mamsTrap_col_E$site)
+nrow(mamsTrap_col_E)
+
+mamsTrap_captures_L_col <- aggregate(larvaeYN ~ plotID + collectDate, data=mamsTrap_captures, FUN=mean)
+nrow(mamsTrap_captures_L_col)
+head(mamsTrap_captures_L_col)
+mamsTrap_captures_L_col$site <- substr(mamsTrap_captures_L_col$plotID, 1, 4)
+head(mamsTrap_captures_L_col)
+unique(mamsTrap_captures_L_col$site)
+
+mamsTrap_captures_L_col_E <- mamsTrap_captures_L_col[which(mamsTrap_captures_L_col$site == 'HARV' | mamsTrap_captures_L_col$site == 'OSBS' | mamsTrap_captures_L_col$site == 'BART' | mamsTrap_captures_L_col$site == 'ORNL' | mamsTrap_captures_L_col$site == 'TALL' | mamsTrap_captures_L_col$site == 'SCBI' | mamsTrap_captures_L_col$site == 'UNDE' | mamsTrap_captures_L_col$site == 'SERC' | mamsTrap_captures_L_col$site == 'GRSM' | mamsTrap_captures_L_col$site == 'BLAN' | mamsTrap_captures_L_col$site == 'TREE' | mamsTrap_captures_L_col$site == 'STEI' | mamsTrap_captures_L_col$site == 'MLBS'),]
+
+
+
+unique(mamsTrap_captures_L_col_E$site)
+nrow(mamsTrap_captures_L_col_E)
+View(mamsTrap_captures)
+
+mamsTrap_captures_N_col <- aggregate(nymphsYN ~ plotID + collectDate, data=mamsTrap_captures, FUN=mean)
+nrow(mamsTrap_captures_N_col)
+head(mamsTrap_captures_N_col)
+
+mamsTrap_captures_N_col$site <- substr(mamsTrap_captures_N_col$plotID, 1, 4)
+head(mamsTrap_captures_N_col)
+unique(mamsTrap_captures_N_col$site)
+
+mamsTrap_captures_N_col_E <- mamsTrap_captures_N_col[which(mamsTrap_captures_N_col$site == 'HARV' | mamsTrap_captures_N_col$site == 'OSBS' | mamsTrap_captures_N_col$site == 'BART' | mamsTrap_captures_N_col$site == 'ORNL' | mamsTrap_captures_N_col$site == 'TALL' | mamsTrap_captures_N_col$site == 'SCBI' | mamsTrap_captures_N_col$site == 'UNDE' | mamsTrap_captures_N_col$site == 'SERC' | mamsTrap_captures_N_col$site == 'GRSM' | mamsTrap_captures_N_col$site == 'BLAN' | mamsTrap_captures_N_col$site == 'TREE' | mamsTrap_captures_N_col$site == 'STEI' | mamsTrap_captures_N_col$site == 'MLBS'),]
+
+unique(mamsTrap_captures_N_col_E$site)
+nrow(mamsTrap_captures_N_col_E)
+head(mamsTrap_captures_N_col_E)
+
+######## Plot
+#plotMams <- ggplot(mamsTrap_col_E, aes(collectDate, capture, group=plotID, colour=plotID)) + geom_line(size=1.5) + facet_wrap(~plotID) + theme(legend.position = "none")
+#plotMams
+
+#plotMamsN <- ggplot(mamsTrap_captures_N_col_E, aes(collectDate, nymphsYN, group=plotID, colour=plotID)) + geom_line(size=1.5) + facet_wrap(~plotID) + theme(legend.position = "none")
+#plotMamsN
+
+#plotMamsL <- ggplot(mamsTrap_captures_L_col_E, aes(collectDate, larvaeYN, group=plotID, colour=plotID)) + geom_line(size=1.5) + facet_wrap(~plotID) + theme(legend.position = "none")
+#plotMamsL
+
+```
+
+
+important subsets
+```{r}
+# important tick stuff
+t#icks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+
+
+# iscap larva
+#I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva'),]
+
+# need to repeat code from above to extract Year
+#I_scap_L$Year <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-6)
+
+# aggregagted larva
+I_scap_L_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_L, FUN=sum)
+
+
+# aggregated nymph
+I_scap_N_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_N, FUN=sum)
+
+
+
+# aggregated adult
+I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_A, FUN=sum)
+
+# # positive bb
+# tick_path_Bb <- tick_path[which(tick_path$testPathogenName == 'Borrelia burgdorferi' | tick_path$testPathogenName == 'Borrelia burgdorferi sensu lato' | tick_path$testPathogenName == 'Borrelia sp.'),]
+# # aggregated bb
+# tick_path_Bb_col <- aggregate(incidence ~ plotID + Date, data=tick_path_Bb, FUN=mean)
+# 
+# # cleaned up aggregated bb
+# tick_path_Bb_col_E <- tick_path_Bb_col[which(tick_path_Bb_col$site != 'DELA' & tick_path_Bb_col$site != 'KONA' & tick_path_Bb_col$site != 'KONZ' & tick_path_Bb_col$site != 'LENO' & tick_path_Bb_col$site != 'UKFS'),]
+
+
+
+### mammal 
+
+# # mammal trap
+# mamsTrap_captures <- mamsTrap[which(mamsTrap$capture == 1),]
+# # aggregate mammal traps
+# mamsTrap_col <- aggregate(capture ~ plotID + collectDate, data=mamsTrap, FUN=mean)
+# 
+# # sites that we're looking at
+# # specfic sites with larval
+# mamsTrap_captures_L_col_E <- mamsTrap_captures_L_col[which(mamsTrap_captures_L_col$site == 'HARV' | mamsTrap_captures_L_col$site == 'OSBS' | mamsTrap_captures_L_col$site == 'BART' | mamsTrap_captures_L_col$site == 'ORNL' | mamsTrap_captures_L_col$site == 'TALL' | mamsTrap_captures_L_col$site == 'SCBI' | mamsTrap_captures_L_col$site == 'UNDE' | mamsTrap_captures_L_col$site == 'SERC' | mamsTrap_captures_L_col$site == 'GRSM' | mamsTrap_captures_L_col$site == 'BLAN' | mamsTrap_captures_L_col$site == 'TREE' | mamsTrap_captures_L_col$site == 'STEI' | mamsTrap_captures_L_col$site == 'MLBS'),]
+# 
+# # mammals with larvae aggregare
+# mamsTrap_captures_L_col <- aggregate(larvaeYN ~ plotID + collectDate, data=mamsTrap_captures, FUN=mean)
+# 
+# 
+# # mammals with nymphs
+# mamsTrap_captures_N_col <- aggregate(nymphsYN ~ plotID + collectDate, data=mamsTrap_captures, FUN=mean)
+# 
+# # mammals with nymphs at specific site
+# mamsTrap_captures_N_col_E <- mamsTrap_captures_N_col[which(mamsTrap_captures_N_col$site == 'HARV' | mamsTrap_captures_N_col$site == 'OSBS' | mamsTrap_captures_N_col$site == 'BART' | mamsTrap_captures_N_col$site == 'ORNL' | mamsTrap_captures_N_col$site == 'TALL' | mamsTrap_captures_N_col$site == 'SCBI' | mamsTrap_captures_N_col$site == 'UNDE' | mamsTrap_captures_N_col$site == 'SERC' | mamsTrap_captures_N_col$site == 'GRSM' | mamsTrap_captures_N_col$site == 'BLAN' | mamsTrap_captures_N_col$site == 'TREE' | mamsTrap_captures_N_col$site == 'STEI' | mamsTrap_captures_N_col$site == 'MLBS'),]
+
+```
+
+
+
+my eda
+```{r}
+library(lubridate)
+# install.packages('forecast')
+# library(forecast)
+# library(viridis)
+# pass.ts <- ts(I_scap_L_col["Year"], start = c(2014,1), frequency = 12)
+# str(pass.ts)
+# autoplot(individualCount)
+# ?lubridate
+# str(I_scap_L_col)
+# 
+# ymd(I_scap_L_col$collectDate)
+
+
+clean_background <- theme(plot.background = element_rect("white"),
+        panel.background = element_rect("white"),
+        panel.grid = element_line("white"),
+        axis.line = element_line("gray25"),
+        axis.text = element_text(size = 12, color = "gray25"),
+        axis.title = element_text(color = "gray25"),
+        legend.text = element_text(size = 12),
+        legend.key = element_rect("white"))
+
+
+```
+
+
+
+```{r bubble 1}
+################ this is more promising
+
+# choose which data to project without subsetting dataframe
+dateVec<- seq(from = as.Date("2016-01-01"), to = (as.Date("2019-12-31")), by = 'months')
+# base plot working from 
+ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  facet_wrap(~site, ncol = 7)+
+  geom_point(alpha = 0.5, aes(size = individualCount))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 1000))+
+  scale_x_date(date_labels = "%Y", 
+               limits = c(min(dateVec), max(dateVec)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')
+        
+
+
+
+
+############################################
+
+
+# not broken down by site
+dateVec<- seq(from = as.Date("2018-01-01"), to = (as.Date("2019-12-31")),
+              by = '1 month')
+ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 1000))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec), max(dateVec)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))
+
+```
+
+try this geom smooth trick at some point
+https://ggplot2.tidyverse.org/reference/lims.html
+last_month <- Sys.Date() - 0:59
+df <- data.frame(
+  date = last_month,
+  price = c(rnorm(30, mean = 15), runif(30) + 0.2 * (1:30))
+)
+
+p <- ggplot(df, aes(date, price)) +
+  geom_line() +
+  stat_smooth()
+  
+```{r larva point}
+
+##################3 kinda like this one by year
+
+# not broken down by site
+
+# just 2016
+dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
+              by = '1 month')
+sixteenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount))+
+  geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  coord_cartesian(ylim = c(0,1.1))+
+  scale_y_continuous(breaks = seq(0,2,1))+
+  clean_background+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec16), max(dateVec16)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+sixteenL
+
+
+# just 2017
+dateVec17<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-11-30")),
+              by = '1 month')
+seventeenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  scale_y_continuous(breaks = seq(0,2,1))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 1.1))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec17), max(dateVec17)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# not broken down by site
+# just 2018
+dateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-11-30")),
+              by = '1 month')
+eighteenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount))+
+    geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 700))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec18), max(dateVec18)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# just 2019
+dateVec19<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-11-30")),
+              by = '1 month')
+nineteenL <-ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 1000))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec19), max(dateVec19)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# compare 2018 & 2019
+library(ggpubr)
+comboL<- ggarrange(sixteenL + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  seventeenL + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  eighteenL + rremove('xlab') + rremove('ylab') + rremove('legend'), 
+                  nineteenL + rremove('xlab') + rremove('ylab')+
+                    rremove('legend'),
+          align = 'v')
+
+annotate_figure(comboL,
+                top = text_grob('Larvae',
+                                face = 'bold',
+                                color = 'red',
+                                size = '10'))
+
+```
+
+
+
+```{r nymphs point}
+# just 2016
+dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
+              by = '1 month')
+sixteenN <- ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 40))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec16), max(dateVec16)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# just 2017
+dateVec17<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-11-30")),
+              by = '1 month')
+seventeenN <- ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 50))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec17), max(dateVec17)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# not broken down by site
+# just 2018
+dateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-11-30")),
+              by = '1 month')
+eighteenN <- ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 45))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec18), max(dateVec18)))+
+  theme(axis.text.x = element_text(angle = 40, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# just 2019
+dateVec19<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-11-30")),
+              by = '1 month')
+nineteenN <-ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 100))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec19), max(dateVec19)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# compare 2018 & 2019
+#library(ggpubr)
+comboN<- ggarrange(sixteenN + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  seventeenN + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  eighteenN + rremove('xlab') + rremove('ylab') + rremove('legend'), 
+                  nineteenN + rremove('xlab') + rremove('ylab')+
+                    rremove('legend'),
+          align = 'v')
+
+annotate_figure(comboN,
+                top = text_grob('Nymphs',
+                                face = 'bold',
+                                color = 'red',
+                                size = '10'))
+```
+
+```{r adults point}
+# just 2016
+## A lot of adults were sampled late in 2016 so i'm including them in the analysis
+dateVec16A<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-12-30")),
+              by = '1 month')
+sixteenA <- ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 6))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec16A), max(dateVec16A)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# just 2017
+dateVec17A<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-08-30")),
+              by = '1 month')
+seventeenA <- ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 6))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec17), max(dateVec17A)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# not broken down by site
+# just 2018
+dateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-10-30")),
+              by = '1 month')
+eighteenA <- ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 10))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec18), max(dateVec18)))+
+  theme(axis.text.x = element_text(angle = 40, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# just 2019
+dateVec19<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-10-30")),
+              by = '1 month')
+nineteenA <-ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount))+
+   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
+              position = position_jitterdodge())+
+  clean_background+
+  coord_cartesian(ylim = c(0, 10))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec19), max(dateVec19)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# compare 2018 & 2019
+#library(ggpubr)
+comboA<- ggarrange(sixteenA + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  seventeenA + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  eighteenA + rremove('xlab') + rremove('ylab') + rremove('legend'), 
+                  nineteenA + rremove('xlab') + rremove('ylab')+
+                    rremove('legend'),
+          align = 'v')
+
+annotate_figure(comboA,
+                top = text_grob('Adults',
+                                face = 'bold',
+                                color = 'red',
+                                size = '10'))
+```
+
+
+I don't get why there's only 1 larvae for 2016/2017. need to check data file
+```{r all 3 points}
+
+comboL
+comboN
+comboA
+```
+
+
+```{r nymphs spline}
+
+library(caret)
+library(splines)
+
+ggplot(I_scap_N, aes(individualCount, x = collectDate))+
+  geom_point()
+
+knots <- quantile(I_scap_N$individualCount, p = c(.25, .5, .75))
+```
+
+
+
+
+
+bubble plot color site bubble size = bins
+```{r larvae bubble}
+
+##################3 kinda like this one by year
+
+# not broken down by site
+
+# just 2016
+dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
+              by = '1 month')
+sixteenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500,700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 2))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec16), max(dateVec16)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# just 2017
+dateVec17<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-11-30")),
+              by = '1 month')
+seventeenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 2))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec17), max(dateVec17)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# not broken down by site
+# just 2018
+dateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-11-30")),
+              by = '1 month')
+eighteenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 700))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec18), max(dateVec18)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# just 2019
+dateVec19<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-11-30")),
+              by = '1 month')
+nineteenL <-ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, fill = site, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 1000))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec19), max(dateVec19)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# compare 2018 & 2019
+#library(ggpubr)
+comboL<- ggarrange(sixteenL + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  seventeenL + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  eighteenL + rremove('xlab') + rremove('ylab') + rremove('legend'), 
+                  nineteenL + rremove('xlab') + rremove('ylab')+
+                    rremove('legend'),
+          align = 'v')
+
+annotate_figure(comboL,
+                top = text_grob('Larvae',
+                                face = 'bold',
+                                color = 'red',
+                                size = '10'))
+
+```
+
+```{r nymphs bubble}
+# just 2016
+dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
+              by = '1 month')
+sixteenN <- ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 50))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec16), max(dateVec16)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# just 2017
+dateVec17<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-11-30")),
+              by = '1 month')
+seventeenN <- ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 50))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec17), max(dateVec17)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# not broken down by site
+# just 2018
+dateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-11-30")),
+              by = '1 month')
+eighteenN <- ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 75))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec18), max(dateVec18)))+
+  theme(axis.text.x = element_text(angle = 40, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# just 2019
+dateVec19<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-11-30")),
+              by = '1 month')
+nineteenN <-ggplot(data = I_scap_N_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, fill = site, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 100))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec19), max(dateVec19)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# compare 2018 & 2019
+#library(ggpubr)
+comboN<- ggarrange(sixteenN + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  seventeenN + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  eighteenN + rremove('xlab') + rremove('ylab') + rremove('legend'), 
+                  nineteenN + rremove('xlab') + rremove('ylab')+
+                    rremove('legend'),
+          align = 'v')
+
+annotate_figure(comboN,
+                top = text_grob('Nymphs',
+                                face = 'bold',
+                                color = 'red',
+                                size = '10'))
+```
+
+```{r adults bubble}
+# just 2016
+## A lot of adults were sampled late in 2016 so i'm including them in the analysis
+dateVec16A<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-12-30")),
+              by = '1 month')
+sixteenA <- ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 8))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec16A), max(dateVec16A)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# just 2017
+dateVec17A<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-08-30")),
+              by = '1 month')
+seventeenA <- ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 8))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec17), max(dateVec17A)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+
+# not broken down by site
+# just 2018
+dateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-10-30")),
+              by = '1 month')
+eighteenA <- ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 15))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec18), max(dateVec18)))+
+  theme(axis.text.x = element_text(angle = 40, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# just 2019
+dateVec19<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-10-30")),
+              by = '1 month')
+nineteenA <-ggplot(data = I_scap_A_col, aes(x = as.Date(collectDate), y = individualCount,size = individualCount))+
+  geom_point(alpha = 0.5, aes(size = individualCount, fill = site, color = site))+
+  scale_size(range = c(1,15), 
+             breaks = c(1,10,50,100,300,500, 700, 1000))+
+  clean_background+
+  coord_cartesian(ylim = c(0, 15))+
+  scale_x_date(date_labels = "%m-%Y", 
+               limits = c(min(dateVec19), max(dateVec19)))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Date",y = 'Individual tick counts \n by site per sampling')
+
+# compare 2018 & 2019
+#library(ggpubr)
+comboA<- ggarrange(sixteenA + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  seventeenA + rremove('xlab') + rremove('ylab') + rremove('legend'),
+                  eighteenA + rremove('xlab') + rremove('ylab') + rremove('legend'), 
+                  nineteenA + rremove('xlab') + rremove('ylab')+
+                    rremove('legend'),
+          align = 'v')
+
+annotate_figure(comboA,
+                top = text_grob('Adults',
+                                face = 'bold',
+                                color = 'red',
+                                size = '10'))
+```
+
+```{r all 3 bubble}
+
+comboL
+comboN
+comboA
+```
+
+
+
+
+
+
+
+
+```{r} 
+# other versions
+ggplot(data = I_scap_L_col, aes(x = collectDate, y = individualCount, fill = site))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(0, 2000))+
+  clean_background
+
+ggplot(data = I_scap_L_col, aes(x = collectDate, y = individualCount, fill = site))+
+  geom_line()+
+  clean_background
+
+
+
+ggplot(data = I_scap_N_col, aes(x = Year, y = individualCount, fill = site))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(0, 75))+
+  clean_background
+
+ggplot(data = I_scap_A_col, aes(x = Year, y = individualCount, fill = site))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(0, 20))+
+  clean_background
+
+
+```
+

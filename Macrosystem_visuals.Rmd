@@ -529,7 +529,7 @@ dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
 sixteenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = individualCount))+
   geom_jitter(alpha = 0.5, aes(color = site), size = 2.5,
               position = position_jitterdodge())+
-  coord_cartesian(ylim = c(0,1.1))+
+  coord_cartesian(ylim = c(0,2))+
   scale_y_continuous(breaks = seq(0,2,1))+
   clean_background+
   scale_x_date(date_labels = "%m-%Y", 
@@ -550,7 +550,7 @@ seventeenL<- ggplot(data = I_scap_L_col, aes(x = as.Date(collectDate), y = indiv
               position = position_jitterdodge())+
   scale_y_continuous(breaks = seq(0,2,1))+
   clean_background+
-  coord_cartesian(ylim = c(0, 1.1))+
+  coord_cartesian(ylim = c(0, 2))+
   scale_x_date(date_labels = "%m-%Y", 
                limits = c(min(dateVec17), max(dateVec17)))+
   theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
@@ -796,10 +796,323 @@ comboA
 library(caret)
 library(splines)
 
-ggplot(I_scap_N, aes(individualCount, x = collectDate))+
-  geom_point()
+ggplot(I_scap_N, aes(collectDate, individualCount))+
+  geom_point()+
+  geom_line()+
+  clean_background
 
 knots <- quantile(I_scap_N$individualCount, p = c(.25, .5, .75))
+
+spiney <- lm(I_scap_N$individualCount ~ bs(I_scap_N$individualCount, df = 3))
+
+
+ggplot(I_scap_N, aes(y = individualCount, x = collectDate))+
+  geom_point() +
+  stat_smooth()
+
+```
+
+
+
+unique_data %>% group_by(x) %>% count(x) %>% arrange(desc(n))
+
+
+## this makes a good plot of sampled 
+```{r geom smooth}
+
+# extract month
+I_scap_L$Month <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate)-3)
+I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
+I_scap_A$Month <- substr(I_scap_A$collectDate, 6, nchar(I_scap_A$collectDate)-3)
+
+
+
+# 2016
+I_scap_N_2016 <- I_scap_N[which(I_scap_N$Year == '2016'), ]
+#str(I_scap_N_2016$Month)
+I_scap_N_2016 <- I_scap_N_2016[which(I_scap_N_2016$Month < "09"),]
+I_scap_N_2016 <- I_scap_N_2016[which(I_scap_N_2016$Month > "03"),]
+#View(I_scap_N_2016)
+# point and line
+N2016 <- ggplot(data = I_scap_N_2016,
+aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.4,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))
+
+
+
+#2017
+I_scap_N_2017 <- I_scap_N[which(I_scap_N$Year == '2017'),]
+I_scap_N_2017 <- I_scap_N_2017[which(I_scap_N_2017$Month < "09"),]
+#I_scap_N_2017 <- I_scap_N_2017[which(I_scap_N_2017$Month > "04"),]
+# point and line
+N2017 <- ggplot(I_scap_N_2017, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.1,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))
+  
+
+
+# 2018
+I_scap_N_2018 <- I_scap_N[which(I_scap_N$Year == '2018'),]
+I_scap_N_2018 <- I_scap_N_2018[which(I_scap_N_2018$Month < "09"),]
+# point and line
+N2018 <- ggplot(I_scap_N_2018, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.9,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10, color = 'red', vjust = -6))
+
+# 2019
+I_scap_N_2019 <- I_scap_N[which(I_scap_N$Year == '2019'),]
+I_scap_N_2019 <- I_scap_N_2019[which(I_scap_N_2019$Month < "09"),]
+# point and line
+N2019 <- ggplot(I_scap_N_2019, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3) +
+    clean_background +
+  theme(plot.margin = unit(c(0,1,3,0), "lines"))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', color = 'red', hjust = .1, size = 10, vjust = -6))
+  
+
+
+nymphsperyear <- ggarrange(N2016 + rremove('xlab') + rremove('ylab') , 
+          N2017 + rremove('xlab') + rremove('ylab'),
+          N2018 + rremove('xlab') + rremove('ylab'),
+          N2019 + rremove('xlab') + rremove('ylab'),
+          #labels=c("2016", "2017", "2018", "2019"),
+          nrow = 1,
+          align = 'h',
+          widths=c(1, 1, 1, 1, 1))
+
+finalnymphquesting <- annotate_figure(nymphsperyear,
+                top = text_grob("Questing Nymphs", 
+                                hjust = .5,
+                                face = 'bold', size = 14),
+                left = text_grob("Total ticks per sampling", rot = 90, face = 'bold'))
+finalnymphquesting
+ggsave("finalnymphquesting.pdf", dpi = 320)
+```
+
+
+```{r larvae geom smooth}
+# extract month
+# I_scap_L$Month <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate)-3)
+# I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
+# I_scap_A$Month <- substr(I_scap_A$collectDate, 6, nchar(I_scap_A$collectDate)-3)
+
+
+
+# # 2016
+# I_scap_L_2016 <- I_scap_L[which(I_scap_L$Year == '2016'), ]
+# #str(I_scap_L_2016$MoLth)
+# I_scap_L_2016 <- I_scap_L_2016[which(I_scap_L_2016$Month < "09"),]
+# I_scap_L_2016 <- I_scap_L_2016[which(I_scap_L_2016$Month > "03"),]
+# #View(I_scap_L_2016)
+# # poiLt aLd liLe
+# L2016 <- ggplot(data = I_scap_L_2016,
+# aes(y = individualCount, x = as.Date(collectDate)))+
+#   geom_point() +
+#   geom_smooth(se = FALSE, color = 'red')+
+#   stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+#               alpha = .3)+
+#   clean_background +
+#   theme(plot.margin = unit(c(0,0.4,3,0), "lines")) +
+#   theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+#   ggtitle("2016")+
+#   theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))
+# 
+# 
+# 
+# #2017
+# I_scap_L_2017 <- I_scap_L[which(I_scap_L$Year == '2017'),]
+# I_scap_L_2017 <- I_scap_L_2017[which(I_scap_L_2017$Month < "09"),]
+# #I_scap_N_2017 <- I_scap_N_2017[which(I_scap_N_2017$Month > "04"),]
+# # point and line
+# L2017 <- ggplot(I_scap_L_2017, aes(y = individualCount, x = as.Date(collectDate)))+
+#   geom_point() +
+#   geom_smooth(se = FALSE, color = 'red')+
+#   stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+#               alpha = .3)+
+#   clean_background +
+#   theme(plot.margin = unit(c(0,0.1,3,0), "lines")) +
+#   theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+#   ggtitle("2017")+
+#   theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))
+#   
+
+
+# 2018
+I_scap_L_2018 <- I_scap_L[which(I_scap_L$Year == '2018'),]
+#I_scap_L_2018 <- I_scap_L_2018[which(I_scap_L_2018$Month < "11"),]
+# point and line
+L2018 <- ggplot(I_scap_L_2018, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.9,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10, color = 'red', vjust = -6))
+
+# 2019
+I_scap_L_2019 <- I_scap_L[which(I_scap_L$Year == '2019'),]
+#I_scap_L_2019 <- I_scap_L_2019[which(I_scap_L_2019$Month < "11"),]
+# point and line
+L2019 <- ggplot(I_scap_L_2019, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3) +
+ # scale_y_discrete(breaks = 1000:3000)+
+  ylim(0,1500)+ # this is hiding some outliers..
+    clean_background +
+  theme(plot.margin = unit(c(0,1,3,0), "lines"))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', color = 'red', hjust = .1, size = 10, vjust = -6))
+  
+
+
+larvaperyear <- ggarrange(
+          L2018 + rremove('xlab') + rremove('ylab'),
+          L2019 + rremove('xlab') + rremove('ylab'),
+          #labels=c("2016", "2017", "2018", "2019"),
+          nrow = 1,
+          align = 'h',
+          widths=c(1, 1, 1, 1, 1))
+
+
+finallarvaquesting <- annotate_figure(larvaperyear,
+                top = text_grob("Questing Larvae", 
+                                hjust = .5,
+                                face = 'bold', size = 14),
+                left = text_grob("Total ticks per sampling", rot = 90, face = 'bold'))
+
+finallarvaquesting
+ggsave("finallarvaquesting.pdf", dpi = 320)
+```
+
+
+
+```{r ault geomsmooth}
+
+
+# 2016
+I_scap_A_2016 <- I_scap_A[which(I_scap_A$Year == '2016'), ]
+#str(I_scap_A_2016$MoLth)
+#I_scap_A_2016 <- I_scap_A_2016[which(I_scap_A_2016$Month < "09"),]
+#I_scap_A_2016 <- I_scap_A_2016[which(I_scap_A_2016$Month > "03"),]
+#View(I_scap_A_2016)
+# poiLt aLd liLe
+A2016 <- ggplot(data = I_scap_A_2016,
+aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)),
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.4,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2016")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))
+
+
+
+#2017
+I_scap_A_2017 <- I_scap_A[which(I_scap_A$Year == '2017'),]
+#I_scap_A_2017 <- I_scap_A_2017[which(I_scap_A_2017$Month < "09"),]
+#I_scap_N_2017 <- I_scap_N_2017[which(I_scap_N_2017$Month > "04"),]
+# point and line
+A2017 <- ggplot(I_scap_A_2017, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)),
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.1,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2017")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))
+
+
+
+# 2018
+I_scap_A_2018 <- I_scap_A[which(I_scap_A$Year == '2018'),]
+#I_scap_A_2018 <- I_scap_A_2018[which(I_scap_A_2018$Month < "11"),]
+# point and line
+A2018 <- ggplot(I_scap_A_2018, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  clean_background +
+  theme(plot.margin = unit(c(0,0.9,3,0), "lines")) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2018")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10, color = 'red', vjust = -6))
+
+# 2019
+I_scap_A_2019 <- I_scap_A[which(I_scap_A$Year == '2019'),]
+#I_scap_A_2019 <- I_scap_A_2019[which(I_scap_A_2019$Month < "11"),]
+# point and line
+A2019 <- ggplot(I_scap_A_2019, aes(y = individualCount, x = as.Date(collectDate)))+
+  geom_point() +
+  geom_smooth(se = FALSE, color = 'red')+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3) +
+ # scale_y_discrete(breaks = 1000:3000)+
+ # ylim(0,1500)+ # this is hiding some outliers..
+    clean_background +
+  theme(plot.margin = unit(c(0,1,3,0), "lines"))+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("2019")+
+  theme(plot.title = element_text(face = 'bold', color = 'red', hjust = .1, size = 10, vjust = -6))
+  
+
+
+adultsperyear <- ggarrange(A2016 + rremove('xlab') + rremove('ylab'),
+                           A2017 + rremove('xlab') + rremove('ylab'),
+          A2018 + rremove('xlab') + rremove('ylab'),
+          A2019 + rremove('xlab') + rremove('ylab'),
+          #labels=c("2016", "2017", "2018", "2019"),
+          nrow = 1,
+          align = 'h',
+          widths=c(1, 1, 1, 1, 1))
+
+
+finaladultsquesting <- annotate_figure(adultsperyear,
+                top = text_grob("Questing Adults", 
+                                hjust = .5,
+                                face = 'bold', size = 14),
+                left = text_grob("Total ticks per sampling", rot = 90, face = 'bold'))
+
+finaladultsquesting
+ggsave("finaladultsquesting.pdf", dpi = 320)
 ```
 
 
@@ -901,6 +1214,7 @@ annotate_figure(comboL,
 
 ```
 
+
 ```{r nymphs bubble}
 # just 2016
 dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
@@ -988,6 +1302,8 @@ annotate_figure(comboN,
                                 color = 'red',
                                 size = '10'))
 ```
+
+
 
 ```{r adults bubble}
 # just 2016
@@ -1077,6 +1393,8 @@ annotate_figure(comboA,
                                 color = 'red',
                                 size = '10'))
 ```
+
+
 
 ```{r all 3 bubble}
 

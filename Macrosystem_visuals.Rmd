@@ -611,7 +611,6 @@ annotate_figure(comboL,
 ```
 
 
-
 ```{r nymphs point}
 # just 2016
 dateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")),
@@ -695,6 +694,7 @@ annotate_figure(comboN,
                                 color = 'red',
                                 size = '10'))
 ```
+
 
 ```{r adults point}
 # just 2016
@@ -818,7 +818,7 @@ unique_data %>% group_by(x) %>% count(x) %>% arrange(desc(n))
 
 
 ## this makes a good plot of sampled 
-```{r geom smooth}
+```{r nymphal geom smooth}
 
 # extract month
 I_scap_L$Month <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate)-3)
@@ -989,7 +989,7 @@ L2019 <- ggplot(I_scap_L_2019, aes(y = individualCount, x = as.Date(collectDate)
   stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
               alpha = .3) +
  # scale_y_discrete(breaks = 1000:3000)+
-  ylim(0,1500)+ # this is hiding some outliers..
+  ylim(0,1000)+ # this is hiding some outliers..
     clean_background +
   theme(plot.margin = unit(c(0,1,3,0), "lines"))+
   theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
@@ -1007,16 +1007,16 @@ larvaperyear <- ggarrange(
           widths=c(1, 1, 1, 1, 1))
 
 
+
 finallarvaquesting <- annotate_figure(larvaperyear,
                 top = text_grob("Questing Larvae", 
                                 hjust = .5,
                                 face = 'bold', size = 14),
                 left = text_grob("Total ticks per sampling", rot = 90, face = 'bold'))
-
+finalnymphquesting
 finallarvaquesting
 ggsave("finallarvaquesting.pdf", dpi = 320)
 ```
-
 
 
 ```{r ault geomsmooth}
@@ -1114,6 +1114,524 @@ finaladultsquesting <- annotate_figure(adultsperyear,
 finaladultsquesting
 ggsave("finaladultsquesting.pdf", dpi = 320)
 ```
+
+
+
+
+ticks sampled per area
+
+```{r ticks sampled per area}
+
+#View(ticks)
+
+# choose columns site ID, collectDate,totalSampledArea,targetTaxaPresent, adultcount, nymphalcount, larvalcount
+ticks_area <- ticks[,c(4,5,15,20,21,22,23,24)]
+#View(ticks_area)
+
+# assuming that targeted taxa is Ixodes so will select Y
+ticks_area_ixodes <- ticks_area[which(ticks_area$targetTaxaPresent == 'Y'),]
+#View(ticks_area_ixodes)
+
+# select sites for this study
+ticks_area_sampled <- ticks_area_ixodes[which(ticks_area_ixodes$site == 'BART' | ticks_area_ixodes$site == 'HARV' | ticks_area_ixodes$site == 'BLAN' | ticks_area_ixodes$site == 'SCBI' | ticks_area_ixodes$site == 'SERC' | ticks_area_ixodes$site == 'OSBS' | ticks_area_ixodes$site == 'STEI' | ticks_area_ixodes$site == 'TREE' | ticks_area_ixodes$site == 'UNDE' | ticks_area_ixodes$site == 'GRSM' | ticks_area_ixodes$site == 'MLBS' | ticks_area_ixodes$site == 'ORNL' | ticks_area_ixodes$site == 'TALL'),]
+
+#View(ticks_area_sampled)
+
+# new column total larvae sampled per area
+ticks_area_sampled$larvaeperarea <- (ticks_area_sampled$larvaCount/ticks_area_sampled$totalSampledArea)
+#View(ticks_area_sampled)
+
+# new column total nymphs sampled per area
+ticks_area_sampled$nymphsperarea <- (ticks_area_sampled$nymphCount/ticks_area_sampled$totalSampledArea)
+#View(ticks_area_sampled)
+
+# new column total adults sampled per area
+ticks_area_sampled$adultsperarea <- (ticks_area_sampled$adultCount/ticks_area_sampled$totalSampledArea)
+View(ticks_area_sampled)
+
+# reformat collect Date
+ticks_area_sampled$CollectDate <- as.character(ticks_area_sampled$collectDate)
+
+ticks_area_sampled$CollectDate <- substr(ticks_area_sampled$CollectDate, 1, nchar(ticks_area_sampled$CollectDate)-7)
+
+# extract year
+ticks_area_sampled$Year <- substr(ticks_area_sampled$CollectDate, 1, nchar(ticks_area_sampled$CollectDate)-6)
+
+unique(ticks_area_sampled$Year)
+
+# keep years with data 2014, 2015, 2016, 2017, 2018 
+ticks_area_sampled_years <- ticks_area_sampled[which(ticks_area_sampled$Year == '2014'|
+                                    ticks_area_sampled$Year == '2015' |
+                                    ticks_area_sampled$Year == '2016' |
+                                    ticks_area_sampled$Year == '2017' |
+                                    ticks_area_sampled$Year == '2018'),]
+View(ticks_area_sampled_years)
+
+# extract month
+ticks_area_sampled_years$Month <- substr(ticks_area_sampled_years$CollectDate, 6, nchar(ticks_area_sampled_years$CollectDate)-3)
+
+ticks_area_sampled_years_month <- ticks_area_sampled_years[which(ticks_area_sampled_years$Month < "11"),]
+
+# clean up this data set and keep relevant columns
+
+ticksperarea <- ticks_area_sampled_years_month[,c(1,2, 4:8, 10:15)]
+#View(ticksperarea)
+
+# plot 
+
+
+## Nymphs
+ggplot(data = ticksperarea, aes(x = Month, y = nymphsperarea,
+                                group = siteID, color = siteID)) +
+  geom_point()+
+  facet_wrap(~ Year, ncol = 5) +
+  clean_background +
+  coord_cartesian(ylim = c(0,1)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks/reported sample area (m)',
+  subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Nymphs per area')
+  
+## Larvae
+ggplot(data = ticksperarea, aes(x = Month, y = larvaeperarea,
+                                group = siteID, color = siteID)) +
+  geom_point()+
+  facet_wrap(~ Year, ncol = 5) +
+  clean_background +
+  coord_cartesian(ylim = c(0,10)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks/reported sample area (m)',
+  subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Larvae per area')
+
+## Adults
+ggplot(data = ticksperarea, aes(x = Month, y = adultsperarea,
+                                group = siteID, color = siteID)) +
+  geom_point()+
+  facet_wrap(~ Year, ncol = 5) +
+  clean_background +
+  coord_cartesian(ylim = c(0,1)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks/reported sample area (m)',
+  subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Adults per area')
+
+
+## ANOTHER WAY 
+
+## Larvae
+ggplot(data = ticksperarea, aes(x = totalSampledArea, y = larvaCount,
+                                group = siteID, color = siteID)) +
+  geom_point()+
+  facet_wrap(~ Year, ncol = 5) +
+  clean_background +
+  coord_cartesian(ylim = c(0,1000)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled",y = 'Total ticks',
+  subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Larvae per area')
+
+
+
+## not grouped by site or year
+
+## LARVEA
+ggplot(data = ticksperarea, aes(x = totalSampledArea, y = larvaCount, group = siteID)) +
+  geom_point(aes(color = siteID))+
+  clean_background +
+  coord_cartesian(ylim = c(0,3000)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Larvae per area (m)')
+
+
+# Nymphs
+ggplot(data = ticksperarea, aes(x = totalSampledArea, y = nymphCount, group = siteID)) +
+  geom_point(aes(color = siteID))+
+  clean_background +
+  coord_cartesian(ylim = c(0,220)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Nymphs per area (m)')
+
+# Adults
+ggplot(data = ticksperarea, aes(x = totalSampledArea, y = adultCount, group = siteID)) +
+  geom_point(aes(color = siteID))+
+  clean_background +
+  coord_cartesian(ylim = c(0,50)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Adults per area (m)')
+
+
+```
+
+```{r}
+### AGGREGATED
+
+
+## LARVAE
+ticks_area_L <- aggregate(larvaCount ~ siteID + CollectDate + Year + + Month + totalSampledArea, data=ticksperarea, FUN=sum)
+
+ggplot(data = ticks_area_L, aes(x = totalSampledArea, y = larvaCount)) +
+  geom_point()+
+  clean_background +
+  coord_cartesian(ylim = c(0,3000)) +
+  geom_smooth(method = lm, formula = y ~ splines::bs(totalSampledArea, 3), se = FALSE)+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled (m)",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Larvae per area (m)')
+
+## NYMPHS
+ticks_area_N <- aggregate(nymphCount ~ siteID + CollectDate + Year + Month +totalSampledArea, data=ticksperarea, FUN=sum)
+
+ggplot(data = ticks_area_N, aes(x = totalSampledArea, y = nymphCount)) +
+  geom_point(aes(color = siteID))+
+  clean_background +
+  coord_cartesian(ylim = c(0,500)) +
+  geom_smooth(method = lm, formula = y ~ splines::bs(totalSampledArea, 3), se = FALSE)+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), 
+              alpha = .3)+
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled (m)",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Nymph per area (m)')
+
+
+## ADULTS
+ticks_area_A <- aggregate(adultCount ~ siteID + CollectDate + Year + Month +totalSampledArea, data=ticksperarea, FUN=sum)
+
+ggplot(data = ticks_area_A, aes(x = totalSampledArea, y = adultCount)) +
+  geom_point(aes(color = siteID))+
+  clean_background +
+  coord_cartesian(ylim = c(0,40)) +
+  #geom_smooth(method = lm, formula = y ~ splines::bs(totalSampledArea, 3), se = FALSE)+
+  #stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), alpha = .3)+
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Total Area Sampled (m)",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Adult per area (m)')
+
+```
+
+
+```{r bubble area}
+
+
+# bubble
+
+## LARVAE
+ggplot(data = ticks_area_L, aes(x = Month, y = larvaCount)) +
+  clean_background +
+   geom_point(alpha = 0.2, aes(size = totalSampledArea))+
+  scale_size(range = c(.1,5), name = 'Total Sampled Area (m)',
+             breaks = c(75,100,125,150,175,200))+
+  coord_cartesian(ylim = c(0,3000)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Larvae per area (m)')
+
+
+## Nymphs
+ggplot(data = ticks_area_N, aes(x = Month, y = nymphCount)) +
+  clean_background +
+   geom_point(alpha = 0.2, aes(size = totalSampledArea))+
+  scale_size(range = c(.1,5), name = 'Total Sampled Area (m)',
+             breaks = c(75,100,125,150,175,200))+
+  coord_cartesian(ylim = c(0,250)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks',
+  #subtitle = 'Proportion of ticks sampled per area (m)',
+  title = 'Nymphs per area (m)')
+
+## Adults
+ggplot(data = ticks_area_A, aes(x = Month, y = adultCount)) +
+  clean_background +
+  facet_wrap(~Year, ncol = 5)+
+   geom_point(alpha = 0.2, aes(size = totalSampledArea, color = siteID))+
+   scale_size(range = c(.1, 5),name = 'Total Sampled Area (m)',
+             breaks = c(100,120,140,160,180,200))+
+  coord_cartesian(ylim = c(0,50)) +
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  ggtitle("Ticks per sampled area")+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks',
+  subtitle = 'Color represents siteID',
+  title = 'Adults per area (m) by month and site')+
+  guides(size = guide_legend(order = 1),
+         color = FALSE)+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')
+
+unique(ticks_area_A$totalSampledArea)
+
+
+```
+
+
+
+```{r boxplot}
+## LARVAE
+l <- ggplot(ticks_area_L, aes(y = larvaCount, x = Month))+
+  geom_boxplot(fill='#A4A4A4', color="black") +
+  coord_cartesian(ylim = c(0, 3000))+
+  clean_background+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks per sampling',
+  title = 'Larvae')
+
+## Nymphs
+n <- ggplot(ticks_area_N, aes(y = nymphCount, x = Month))+
+  geom_boxplot(fill='#A4A4A4', color="black") +
+  coord_cartesian(ylim = c(0, 300))+
+  clean_background+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.1, size = 10,  color = 'red', vjust = -6))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks per sampling',
+  title = 'Nymphs')
+
+## ADULTS
+a <- ggplot(ticks_area_A, aes(y = adultCount, x = Month))+
+  geom_boxplot(fill='#A4A4A4', color="black") +
+  coord_cartesian(ylim = c(0, 50))+
+  clean_background+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
+  theme(plot.title = element_text(face = 'bold',hjust = 0.1, size = 10,  color = 'red', vjust = -6))+
+  theme(axis.text.x = element_text(face = 'bold'))+
+  labs(x = "Month",y = 'Total ticks per sampling',
+  title = 'Adults')
+
+boxlna<- ggarrange(l + rremove('xlab') + rremove('ylab') + rremove('legend'),
+          n + rremove('xlab') + rremove('ylab') + rremove('legend'),
+          a + rremove('xlab') + rremove('ylab') + rremove('legend'),
+          ncol = 3,
+          widths=c(1.3, 1.3, 1.3))
+annotate_figure(boxlna,
+                top = text_grob('Total ticks per sampling (Years 2014 - 2019)',
+                                face = 'bold',
+                                color = 'black',
+                                size = '12'),
+                 bottom = text_grob("Month",face = 'bold', hjust = .5),
+                left = text_grob("Total questing ticks",face = 'bold', rot = 90,hjust = .5))
+                              
+
+```
+
+
+
+```{r mammals}
+
+ggplot(mamsTrap_captures, aes(larvaeYN, nymphsYN))+
+  geom_jitter()
+
+#View(mamsTrap_captures_L_col_E)
+
+unique(mamsTrap_captures$larvalTicksAttached)
+
+mosaicplot(mamsTrap_captures$larvalTicksAttached)
+
+mosaicplot(mamsTrap_captures_L_col_E$larvaeYN)
+mosaicplot(mamsTrap_captures_N_col_E$nymphsYN)
+
+
+table(mamsTrap_captures$larvaeYN, mamsTrap_captures$nymphsYN)
+mosaicplot(~larvaeYN+nymphsYN, data = mamsTrap_captures,
+           color = c('white', 'grey'),
+           main = 'mammal')
+
+
+# get rid of non-Y or N for larvae
+
+library(dplyr)
+attachedticks <- mamsTrap_captures[which(mamsTrap_captures$larvalTicksAttached == 'Y' | mamsTrap_captures$larvalTicksAttached == 'N'),]
+attachedticks <- attachedticks[which(attachedticks$nymphalTicksAttached == 'Y'|attachedticks$nymphalTicksAttached == 'N'),]
+unique(attachedticks$nymphalTicksAttached)
+
+
+# choose only relevant sites
+attachedticks <- attachedticks[which(attachedticks$site == 'BART' | attachedticks$site == 'HARV' | attachedticks$site == 'BLAN' | attachedticks$site == 'SCBI' | attachedticks$site == 'SERC' | attachedticks$site == 'OSBS' | attachedticks$site == 'STEI' | attachedticks$site == 'TREE' | attachedticks$site == 'UNDE' | attachedticks$site == 'GRSM' | attachedticks$site == 'MLBS' | attachedticks$site == 'ORNL' | attachedticks$site == 'TALL'),]
+                   
+
+# point yn for larva & nymphs
+ggplot(attachedticks, aes(x = siteID,y =larvalTicksAttached))+
+  geom_count(aes(x = siteID,y =larvalTicksAttached, color = 'blue'), alpha = .9)+
+  geom_count(aes(x = siteID,y = nymphalTicksAttached, color = 'lightyellow'),alpha = .5)+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5, face = 'bold'))+
+  clean_background+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  labs(x = "SiteID",y = 'Mammals with attached ticks',
+       color = 'Tick life stage',
+       size = 'Sample size (n)')+
+  scale_color_manual(labels = c('larvae','nymphs'),
+                     values = c('orange', 'lightblue'))
+
+## separate
+ll<- ggplot(attachedticks, aes(x = siteID,y =larvalTicksAttached))+
+  geom_count(aes(x = siteID,y =larvalTicksAttached,), color = 'blue', alpha = .9)+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5, face = 'bold'))+
+  clean_background+
+  ggtitle('Attached Larvae')+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.04, size = 8, vjust = -5))+
+  labs(x = "SiteID",y = 'Mammals with attached ticks',
+       size = 'Sample size (n)')
+
+
+nn<- ggplot(attachedticks, aes(x = siteID,y = nymphalTicksAttached))+
+  geom_count(aes(x = siteID,y =nymphalTicksAttached,), color = 'red', alpha = .9)+
+  theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5, face = 'bold'))+
+  clean_background+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.5))+
+  labs(x = "SiteID",y = 'Mammals with attached ticks',
+       size = 'Sample size (n)')+
+  ggtitle('Attached Nymphs')+
+  theme(plot.title = element_text(face = 'bold', hjust = 0.04, size = 8, vjust = -5))
+
+attached <- ggarrange(ll + rremove('xlab') + rremove('ylab'),
+          nn + rremove('xlab')+ rremove('ylab'), 
+          nrow = 2, 
+          align = 'v')
+
+annotate_figure(attached,
+                top = text_grob("Attached mammal ticks", 
+                                hjust = .5,
+                                face = 'bold', size = 12),
+                left = text_grob("Attached ticks (Yes/No)", rot = 90, face = 'bold'),
+                bottom = text_grob("SiteID", 
+                                hjust = .3,
+                                face = 'bold', size = 12))
+
+```
+
+```{r}
+
+al <- ggplot(attachedticks, aes(larvalTicksAttached))+
+  geom_histogram(stat = 'count')+
+  clean_background+
+  labs(x = "Attached Ticks", y = 'Count')+
+  ggtitle('Attached Larvae (No/Yes)')
+  
+an <- ggplot(attachedticks, aes(nymphalTicksAttached))+
+  geom_histogram(stat = 'count')+
+  clean_background+
+  labs(x = "Attached Ticks", y = 'Count')+
+  ggtitle('Attached Larvae (No/Yes)')
+
+ggarrange(al,an)
+
+```
+
+
+
+```{r spline analysis not helpful}
+### spline analysis
+
+## LARVAE
+knots <- quantile(ticksperarea$totalSampledArea, p = c(0.25, .5, .75))
+spiney <- lm(larvaCount ~ bs(totalSampledArea, knots = knots), data = ticksperarea)
+summary(spiney)$r.squared
+
+ggplot(ticksperarea, aes(totalSampledArea, larvaCount))+
+  geom_point()+
+  stat_smooth(method = lm, formula = y ~ splines::bs(x, df = 3), color="red", fill="red", alpha=0.2) +
+  ggtitle('Cubic Spline Fit (red) - Larvae')+
+  theme_bw()
+
+## NYMPHS
+knots <- quantile(ticksperarea$totalSampledArea, p = c(0.25, .5, .75))
+spiney <- lm(nymphCount ~ bs(totalSampledArea, knots = knots), data = ticksperarea)
+summary(spiney)$r.squared
+
+ggplot(ticksperarea, aes(totalSampledArea, nymphCount))+
+  geom_point()+
+  stat_smooth(method = lm, formula = y ~ splines::bs(x, df = 3), color="red", fill="red", alpha=0.2) +
+  ggtitle('Cubic Spline Fit (red) - Nymphs')+
+  theme_bw()
+
+## ADULTS
+knots <- quantile(ticksperarea$totalSampledArea, p = c(0.25, .5, .75))
+spiney <- lm(adultCount ~ bs(totalSampledArea, knots = knots), data = ticksperarea)
+summary(spiney)$r.squared
+
+ggplot(ticksperarea, aes(totalSampledArea, adultCount))+
+  geom_point()+
+  stat_smooth(method = lm, formula = y ~ splines::bs(x, df = 3), color="red", fill="red", alpha=0.2) +
+  ggtitle('Cubic Spline Fit (red)')+
+  theme_bw()
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1304,7 +1822,6 @@ annotate_figure(comboN,
 ```
 
 
-
 ```{r adults bubble}
 # just 2016
 ## A lot of adults were sampled late in 2016 so i'm including them in the analysis
@@ -1393,7 +1910,6 @@ annotate_figure(comboA,
                                 color = 'red',
                                 size = '10'))
 ```
-
 
 
 ```{r all 3 bubble}

@@ -959,8 +959,12 @@ ggsave("finalnymphquesting.pdf", dpi = 320)
 # 
 # finaladultsquesting
 # ggsave("finaladultsquesting.pdf", dpi = 320)
+
+
 ```
-## Graph type 3
+
+
+## **Graph type 3**
 
 *Boxplots of total questing ticks by life stage and month per sampling (Years 2014 - 2019)*
 

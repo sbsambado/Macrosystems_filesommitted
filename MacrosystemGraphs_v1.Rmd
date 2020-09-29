@@ -5,7 +5,37 @@ date: "9/28/2020"
 output: html_document
 ---
 
-required packages and time saving objects
+## **Macrosystem Proposal**
+
+Data are from NEON
+
+This is some EDA for a grant proposal with MacDonald et al.
+
+Data analyzed are: 
+
+**questing I. scapularis abundances across**
+
++ sites of interest
++ peak activity during months of March - September
++ Years (2014 - 2019)
+
+
+**attached I. scapularis on mammals across** 
+
++ sites of interest
+
+*attached tick data needs to be tidied up more since it's currently in present/absent version*
+
+
+```{r setup, include= FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(error = FALSE)
+knitr::opts_chunk$set(strip.white = TRUE)
+```
+
+
 ```{r packages and code savers}
 library(dplyr)
 library(tidyverse)
@@ -14,7 +44,6 @@ library(base)
 library(ggplot2)
 library(gridExtra)
 library(ggpubr)
-
 library(lubridate)
 library(caret)
 library(splines)
@@ -31,14 +60,16 @@ clean_background <- theme(plot.background = element_rect("white"),
 ```
 
 
-original csv's pulled from NEON
-```{r original csvs}
+Original csv's are pulled from NEON.
+On my computer, these files are stored in a different R Project/Git Repository called 'Macrosystems'
+
+```{r pull original csvs}
 
 # ticks
 ticks <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_fielddata.csv", header=T)
 #head(ticks)
 #unique(ticks$siteID)
-tail(ticks)
+#tail(ticks)
 #nrow(ticks)
 
 # tick taxa
@@ -116,7 +147,7 @@ ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
 ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
 #head(ticks_taxa)
 
-plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+#plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
 
 # select columns
 ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
@@ -321,7 +352,7 @@ mamsTrap_captures_N_col_E <- mamsTrap_captures_N_col[which(mamsTrap_captures_N_c
 ```
 
 
-aggregated tick data
+Aggregated tick data
 ```{r aggregated tick data}
 
 # aggregagted larva
@@ -338,9 +369,12 @@ I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 
 ## Graph type 1
-- aggregated questing tick abundances by site by life stage per year
 
-Not a lot of data for larvae from 2016 and 2017 so those years were omitted, there is one sampling event > 3000 larvae were collected but omitted it to make a more cohesive graph
+*Aggregated questing tick abundances by site by life stage per year*
+
++ Don't think these graphs are useful for the proposal but it was easier for me to visualize which sites are sampling more often
+
++ Not a lot of data for larvae from 2016 and 2017 so those years were omitted, there is one sampling event > 3000 larvae were collected but omitted it to make a more cohesive graph
 ```{r broken down by life stage then year}
 
 ## LARVAE
@@ -620,11 +654,13 @@ annotate_figure(comboA,
 
 ## Graph type 2
 
-- aggregated questing nymphal abundances by site by month per year
+*Aggregated questing nymphal abundances by site by month per year
 
-Not a lot of data for larvae from 2016 and 2017 so those years were omitted, there is one sampling event > 3000 larvae were collected but omitted it to make a more cohesive graph.
++ I think the phenology of nymphs stand out more when ncol = 4 vs nrow = 4
 
-There was a lot of adult data per year to make good geom_smooth() plots, so I have commented them out unless you want to keep them.
++ Not a lot of data for larvae from 2016 and 2017 so those years were omitted, there is one sampling event > 3000 larvae were collected but omitted it to make a more cohesive graph.
+
++ There was a lot of adult data per year to make good geom_smooth() plots, so I have commented them out unless you want to keep them.
 
 ```{r}
 # extract month
@@ -926,7 +962,9 @@ ggsave("finalnymphquesting.pdf", dpi = 320)
 ```
 ## Graph type 3
 
-Boxplot of total questing ticks per sampling by life stage and month (Years 2014 - 2019)
+*Boxplots of total questing ticks by life stage and month per sampling (Years 2014 - 2019)*
+
++ Just another way to visualize the phenology
 
 ```{r boxplot by life stage by month}
 
@@ -980,12 +1018,13 @@ ticks_area_sampled_years <- ticks_area_sampled[which(ticks_area_sampled$Year == 
 ticks_area_sampled_years$Month <- substr(ticks_area_sampled_years$CollectDate, 6, nchar(ticks_area_sampled_years$CollectDate)-3)
 
 ticks_area_sampled_years_month <- ticks_area_sampled_years[which(ticks_area_sampled_years$Month < "11"),]
-View(ticks_area_sampled_years_month)
+#View(ticks_area_sampled_years_month)
 # clean up this data set and keep relevant columns
 
-ticksperarea <- ticks_area_sampled_years_month[,c(1,2, 4,5,6,7,8, 10,11,12,13,14,15)]
+ticksperarea <- ticks_area_sampled_years_month
 #View(ticksperarea)
 
+### Let's plot
 
 
 ## LARVAE
@@ -1045,13 +1084,13 @@ annotate_figure(boxlna,
 ```
 
 
-## Graph type 4
+## **Graph type 4**
 
-Total ticks sampled per area(m) size with siteID
+*Total questing ticks sampled per area (m) size with siteID*
 
-These graphs were less interesting to me but I can fiddle around with them more
++ These graphs were less interesting to me but I can fiddle around with them more
 
-Type 4.A no site identifier
+**Type 4.A with no site identifier**
 
 ```{r no site identifier}
 
@@ -1107,7 +1146,10 @@ ggplot(data = ticks_area_A, aes(x = Month, y = adultCount)) +
 ```
 
 
-Type 4.B site identifier
+**Type 4.B with site identifier**
+
++ Still not sure how helpful these graphs are
+
 ```{r with site identifier}
 
 ## LARVAE
@@ -1169,11 +1211,13 @@ ggplot(data = ticks_area_A, aes(x = Month, y = adultCount)) +
 ```
 
 
-## Graph type 5
+## **Graph type 5**
 
-Attached mammal ticks. This data is not as great, but let me know if there's another way you would like me to represent it
++ Attached mammal ticks in Yes/No format
 
-Type 5.A
++ This data is not as great, but let me know if there's another way you would like me to represent it
+
+**Type 5.A represents mammal sample size**
 
 ```{r}
 # get rid of non-Y or N for larvae
@@ -1224,8 +1268,10 @@ annotate_figure(attached,
 ```
 
 
-Type 5.B
-I can keep fiddling around with this figure to make aesthetics more appealing/easy to interpret
+**Type 5.B**
+
++ I was trying to combine two plots into one, but the No for nymphs overshadows the larval data
++ I can keep fiddling around with this figure to make aesthetics more appealing/easy to interpret
 
 ```{r overlapping}
 
@@ -1248,7 +1294,9 @@ ggplot(attachedticks, aes(x = siteID,y =larvalTicksAttached))+
 
 ## Graph type 6
 
-Standard histogram
+*Histogram of attached ticks by life stage*
+
++ Not really helpful I don't think for the proposal, I think mosaic plot was a helpful way for me to visualize this data but it basically highlights that there's less attached tick data to use vs. attached tick data which may not help part of the proposal that suggests using larval burden data to make up for the lack of questing larval data in 2016/2017
 
 ```{r histogram attached ticks}
 al <- ggplot(attachedticks, aes(larvalTicksAttached))+
@@ -1261,8 +1309,10 @@ an <- ggplot(attachedticks, aes(nymphalTicksAttached))+
   geom_histogram(stat = 'count')+
   clean_background+
   labs(x = "Attached Ticks", y = 'Count')+
-  ggtitle('Attached Larvae (No/Yes)')
+  ggtitle('Attached Nymphs (No/Yes)')
 
 ggarrange(al,an)
 ```
+
+
 

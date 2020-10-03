@@ -168,6 +168,10 @@ ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
 
 ############## aggregating ixodes life stages #######
 
+```
+
+Nymphs
+```{r}
 ######## Ixodes 
 
 
@@ -196,6 +200,10 @@ I_scap_N_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 #View(I_scap_N)
 
+
+```
+
+```{r}
 #Larvae:
 I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva'),]
 #head(I_scap_L)
@@ -277,7 +285,6 @@ tick_path_Bm <- tick_path[which(tick_path$testPathogenName == 'Borrelia miyamoto
 tick_path_Bm_pos <- tick_path_Bm[which(tick_path_Bm$testResult == 'Positive'),]
 #nrow(tick_path_Bm_pos)
 #########################
-
 
 
 tick_path_Bb$incidence <- ifelse(tick_path_Bb$testResult == 'Positive', 1, 0)
@@ -395,15 +402,30 @@ I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 
 ```{r}
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
 
 I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
 I_scap_N$Weeks <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate))
 #View(I_scap_N)
-I_scap_N <- I_scap_N[which(I_scap_N$Month < "10"),]
+I_scap_N <- I_scap_N[which(I_scap_N$Month < "4"),]
 
 #I_scap_N_col$Month <- substr(I_scap_N_col$collectDate, 6, nchar(I_scap_N_col$collectDate)-3)
 
-boop <- aggregate(individualCount ~ site, Year, Month, data = I_scap_N)
+#boop <- aggregate(individualCount ~ site, Year, Month, data = I_scap_N)
 #library(lubridate)
 
 ymd(I_scap_N$collectDate)
@@ -435,7 +457,7 @@ I_scap_N$site = factor(I_scap_N$site,
                                        'BLAN - MID ATLANTIC',
                                        'SCBI - MID ATLANTIC',
                                        'SERC - MID ATLANTIC',
-                                       'ORNBL - APPALACHIANS'))
+                                       'ORNL - APPALACHIANS'))
 
 
 # geom smooth = lm
@@ -466,32 +488,58 @@ I_scap_N$site = factor(I_scap_N$site,
 #   stat_smooth()+
 #   clean_background
 
-month(as.POSIXlt(I_scap_N$collectDate, format = "%Y-%m- %d"))
+I_scap_N$Month <-month(as.POSIXlt(I_scap_N$collectDate, format = "%Y-%m- %d"))
+
+class(I_scap_N$Month)
+
+
+
+
+noharv <- I_scap_N[!(I_scap_N$site== "HARV - NORTHEAST" & I_scap_N$Month=="4"),]
+noharv <- noharv[which(noharv$site == 'HARV - NORTHEAST' |
+                         noharv$site == 'ORNL - APPALACHIANS' |
+                         noharv$site == 'SCBI - MID ATLANTIC'),]
+noharv$site = factor(noharv$site, 
+                            levels = c('ORNL - APPALACHIANS',
+                                       'SCBI - MID ATLANTIC',
+                                       'HARV - NORTHEAST'),
+                            labels = c('ORNL - APPALACHIANS',
+                                       'SCBI - MID ATLANTIC',
+                                       'HARV - NORTHEAST'))
+
 
 # Weighted geom smooth = loess, wiggly 
-ggplot(data = I_scap_N,
+ggplot(data = noharv,
 aes(y = individualCount, x = Month))+
-  facet_wrap(~ site, scale = 'free_y' )+
+  facet_wrap(~ site, scale = 'free_y', ncol = 3)+
   geom_point() +
-  geom_smooth(method="loess",aes(weight = individualCount), 
-              size = 1.5, color = 'red',
-              span = .7, se = FALSE)+
-  clean_background
+  geom_smooth(se = FALSE, color = 'red',aes(weight = individualCount), span = .7, size = 1.5)+
+    stat_smooth(geom='ribbon', aes(weight = individualCount,ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), alpha = .3)+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold'))+
+  clean_background +
+  coord_cartesian(xlim = c(3, 9))+
+  geom_vline(xintercept = 6)+
+  labs(y = 'Total ticks per sampling \n (2016 - 2019)', x = 'Collection Month') +
+  theme(axis.title.y =  element_text(face = 'bold',size = 12, color = 'black')) +
+  theme(axis.title.x =  element_text(face = 'bold',size = 12, color = 'black'))
+ggsave("geomnymphfinal.pdf", dpi = 320)
 
 
-as.character.Date(I_scap_N$Month)
+  #scale_y_continuous(expand = c(0, 0), limits = c(0, max(individualCount))) 
 
 
-# Weighted geom smooth = loess, medium wiggly 
-ggplot(data = I_scap_N,
-aes(y = individualCount, x = as.character.Date(Month)))+
-  facet_wrap(~ site, scale = 'free_y' )+
-  geom_point() +
-  geom_smooth(method="loess",aes(weight = individualCount), 
-             size = 1.5, color = 'red',
-              span = .7, se = FALSE)+
-  clean_background
-
+# # Weighted geom smooth = loess, medium wiggly 
+# ggplot(data = I_scap_N,
+# aes(y = individualCount, x = as.character.Date(Month)))+
+#   facet_wrap(~ site, scale = 'free_y' )+
+#   geom_point() +
+#   stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), alpha = .3)+
+#   geom_smooth(method="loess", aes(weight = individualCount),
+#              size = 1.5, color = 'red',
+#               span = .7, se = FALSE)+
+#   clean_background
+# 
 
 # # Weighted geom smooth = loess, no wiggle
 # some wiggle makes peaks more pronounced
@@ -505,6 +553,58 @@ aes(y = individualCount, x = as.character.Date(Month)))+
 #   clean_background
 ```
 
+
+```{r completed geom area}
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
+I_scap_N$Weeks <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate))
+
+collected <- I_scap_N %>%
+  group_by(Month, site) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+View(collected)
+
+collected <- collected[which(collected$site == 'HARV - NORTHEAST' |
+                                       collected$site == 'SCBI - MID ATLANTIC' |
+                               collected$site == 'ORNL - APPALACHIANS'),]
+
+ggplot(collected, aes(y = sum_counts, x = Month, group = site, color = site))+
+  #geom_smooth(se = FALSE)+
+  geom_area(aes(fill = site),alpha = .7)+
+  clean_background +
+  geom_vline(xintercept = 6, alpha = .3, ) +
+  labs(y = 'Summed nymph counts\n (2016 - 2019)', x = 'Collection Month') +
+  #labs(fill = "Site")+
+  theme(axis.title.y =  element_text(face = 'bold',size = 12))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 12))+
+  scale_x_continuous(breaks = round(seq(min(collected$Month), max(collected$Month))))+
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(legend.position = c(.75, .8))
+  #theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  #theme(legend.key.size = unit(.5, 'line'))
+ggsave("geomareanymph.pdf", dpi = 320)
+
+  
+
+```
+
+
+geom_area
 ```{r}
 
   
@@ -513,34 +613,51 @@ aes(y = individualCount, x = as.character.Date(Month)))+
 
 
 boop <- I_scap_N %>%
-  group_by(site,Month)%>%
-  summarise(sum_counts = sum(individualCount))
+  group_by(Month, site)%>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
 View(boop)
 
+#boop <- boop[which(boop$Month > "03"),]
 
-month(as.POSIXlt(boop$collectDate, format = "%Y-%m- %d"))
-boop <- boop[which(boop$site == 'HARV - NORTHEAST' |
-                     boop$site == 'ORNBL - APPALACHIANS' |
-                     boop$site == 'SCBI - MID ATLANTIC'),]
+#month(as.POSIXlt(boop$collectDate, format = "%Y-%m- %d"))
+boop <- boop[which(boop$site == 'HARV' |
+                     boop$site == 'BLAN' |
+                     boop$site == 'ORNL' |
+                     boop$site == 'SERC' |
+                     boop$site == 'SCBI'),]
 
 boop$site = factor(boop$site, 
-                            levels = c('HARV - NORTHEAST',
-                                      'SCBI - MID ATLANTIC',
-                                       'ORNBL - APPALACHIANS'))
+                            labels = c('HARV - NORTHEAST',
+                                       'BLAN - MID ATLANTIC',
+                                       'SERC - MID ATLANTIC',
+                                       'SCBI - MID ATLANTIC',
+                                       'ORNL - APPALACHIANS'))
 
-as.character.Date(boop$Month)
+#boop$Month <- as.numeric(boop$Month)
+
+#class(boop$Month)
+#as.Date.numeric(boop$Month)
 # Weighted stat smooth = loess
 ggplot(data = boop,
-aes(y = sum_counts, x = as.numeric(Month)))+
-  facet_wrap(~ site, nrow = 3, scale = 'free_y')+
-  geom_point() +
-  geom_line(lineend = "round", linejoin = "round")+
-  clean_background
+aes(y = sum_counts, x = Month))+
+  #facet_wrap(~ site, nrow = 3, scale = 'free_y')+
+  #geom_point() +
+  #geom_line(lineend = "round", linejoin = "round")+
+  geom_area(aes(fill = site, group = site), alpha = .9)+
+  clean_background +
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  labs(y = 'Summed nymph counts\n (2016 - 2019)') +
+  labs(fill = "Site")+
+  theme(axis.title.y =  element_text(face = 'bold',size = 12)) +
+  theme(axis.title.x =  element_text(face = 'bold',size = 12)) +
+  geom_vline(xintercept = 04)
+  #theme(legend.position = 'bottom', legend.box = 'horizontal')
 
 
 ```
 
-```{r}
+```{r extra plots}
  #library(mgcv) 
 # ggplot(data = I_scap_N,
 # aes(y = individualCount, x = as.Date(collectDate)))+
@@ -580,8 +697,186 @@ aes(y = sum_counts, x = as.numeric(Month)))+
 ```
 
 
+incidence
+```{r}
+# extract Year
+tick_path_Bb_col_E$Year <- substr(tick_path_Bb_col_E$Date, 1, nchar(tick_path_Bb_col_E$Date)-6)
+# extract Month
+tick_path_Bb_col_E$Month <- substr(tick_path_Bb_col_E$Date, 6, nchar(tick_path_Bb_col_E$Date)-3)
 
 
+incidence_2 <- tick_path_Bb_col_E[which(tick_path_Bb_col_E$site == 'HARV' |
+                                          tick_path_Bb_col_E$site == 'SCBI' |
+                                         tick_path_Bb_col_E$site == 'ORNL'),]
+
+incidence_2$site = factor(incidence_2$site, 
+                            levels = c('HARV',
+                                       'SCBI',
+                                       'ORNL'),
+                            labels = c('HARV - NORTHEAST',
+                                       'SCBI - MID ATLANTIC',
+                                       'ORNL - APPALACHIANS'))
+
+
+#View(incidence_2)
+
+ggplot(incidence_2, aes(y = incidence, x = Month))+
+  facet_wrap(~site, nrow = 3, scale = 'free_y')+
+  geom_boxplot(fill = 'gray')+
+  clean_background +
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  labs(y = 'Summed nymph counts\n (2016 - 2019)') +
+  theme(axis.title.y =  element_text(face = 'bold',size = 12)) +
+  theme(axis.title.x =  element_text(face = 'bold',size = 12)) 
+
+```
+
+
+geom_bar plotID
+```{r}
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
+I_scap_N$Weeks <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate))
+
+tick_path_Bb_col_E$site = factor(tick_path_Bb_col_E$plotID, 
+                            levels = c("HARV_001",
+                                       "HARV_002",
+                                       "HARV_004",
+                                       "HARV_006",
+                                       "HARV_020" ,
+                                       "HARV_022", 
+                                       "HARV_026" ,
+                                       "TREE_007",
+                                       "TREE_015",
+                                       "TREE_017",
+                                       "TREE_019",
+                                       "TREE_022",
+                                       "BLAN_005",
+                                       "BLAN_012",
+                                       "SERC_001",
+                                       "SERC_002",
+                                       "SERC_005",
+                                       "SERC_006",
+                                       "SERC_012",
+                                       "SERC_023",
+                                       "SCBI_002",
+                                       "SCBI_005",
+                                       "SCBI_006",
+                                       "SCBI_007",
+                                       "SCBI_013",
+                                       "SCBI_039",
+                                       "ORNL_002",
+                                       "ORNL_003",
+                                       "ORNL_007",
+                                       "ORNL_008",
+                                       "ORNL_009",
+                                       "ORNL_040")) 
+                                       
+
+
+totalticks <- aggregate(individualCount ~ site, data=I_scap_N, FUN=sum)
+names(totalticks)[1] <- "Site"
+names(totalticks)[2] <- 'Total ticks'
+totalticks$Site = factor(totalticks$Site, 
+                            levels = c("HARV",
+                                       "TREE",
+                                       "BLAN",
+                                       "SERC",
+                                       "SCBI",
+                                       "ORNL"),
+                         labels = c("HARV",
+                                       "TREE",
+                                       "BLAN",
+                                       "SERC",
+                                       "SCBI",
+                                       "ORNL")) 
+
+totalticks   <- subset(totalticks, !is.na(Site))                           
+                                    
+ ggplot(as.data.frame(totalticks), aes(x = site, y = individualCount))+
+   geom_point()
+ 
+
+
+
+#d <- tableGrob(totalticks, rows = rownames(totalticks), cols = colnames(totalticks))
+#grid.arrange(d)
+#myt <- ttheme_default(
+         # Use hjust and x to left justify the text
+         # Alternate the row fill colours
+                 #core = list(fg_params=list(hjust = 1, x=1),
+                             #bg_params=list(fill=c("grey90", "grey88"))))
+#c <-grid.draw(tableGrob(format(totalticks, big.mark=","), theme=myt, rows=NULL))
+
+tt <- ttheme_default(colhead=list(fg_params = list(parse=TRUE)))
+tbl <- tableGrob(totalticks, rows=NULL, theme=tt)
+
+#library(cowplot)
+
+ggplot(totalticks, aes(y = individualCount, x = plotID))+
+  geom_point()                                      
+                                       
+# remove NA                                     
+tick_path_Bb_col_E   <- subset(tick_path_Bb_col_E, !is.na(plotID))                           
+
+ggplot(tick_path_Bb_col_E, aes(x = incidence, y = plotID))+
+         geom_boxplot(fill = 'gray91', na.rm = TRUE)+
+  scale_y_discrete(limits = rev(levels(tick_path_Bb_col_E$plotID)))+
+  clean_background +
+  theme(axis.text.y = element_text(size = 5.7, vjust = 0.9))+
+  titleytheme +
+  geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
+  labs(x = "B. burgdorferi incidence", y = "SiteID") +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
+  xtitletheme +
+  annotation_custom(tbl, xmin = .75, ymax = 11)
+ggsave("bbincidenceboxplotwithtable.pdf", dpi = 320)
+
+
+ggarrange(x,tbl,
+          widths = c(1, .3),
+          heights = c(1,.5,.3)) 
+
+  # annotate(geom = "text", x = .9, y = 37.1, label = "NORTHEAST", size = 3.5, color = 'red')+
+  # annotate(geom = "text", x = .9, y = 27.7, label = "GREAT LAKES", size = 3.5, color = 'red') +
+  # annotate(geom = "text", x = .9, y = 24.35, label = "MID ATLANTIC", size = 3.5, color = 'red') +
+  # annotate(geom = "text", x = .9, y = 20.35, label = "MID ATLANTIC", size = 3.5, color = 'red') +
+  # annotate(geom = "text", x = .9, y = 14.35, label = "MID ATLANTIC", size = 3.5, color = 'red') +
+  # annotate(geom = "text", x = .9, y = 8.35, label = "APPALACHIANS", size = 3.5, color = 'red') +
+  # annotate(geom = "text", x = .9, y = 3.35, label = "SOUTHEAST", size = 3.5, color = 'red')
+  # 
+
+
+
+
+#unique(tick_path_Bb_col_E$site)
+```
+
+
+```{r}
+
+tick_path_Bb_col_E$countt <-aggregate(individualCount ~ plotID, data=I_scap_N, FUN=sum)
+
+unique(totalticks$site)
+ggplot(totalticks, aes(y = individualCount, x = site))+
+  geom_point()
+```
 
 
 

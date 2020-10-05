@@ -1,0 +1,103 @@
+---
+title: "broadneon"
+author: "sbsambado"
+date: "10/5/2020"
+output: html_document
+---
+
+```{r}
+ticks_taxa <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_taxonomyProcessed.csv", header=T)
+
+ticks_taxa$site <- substr(ticks_taxa$plotID, 1, 4)
+
+unique(ticks_taxa$site)
+ticks_taxa <- ticks_taxa[which(ticks_taxa$scientificName == 'Ixodes scapularis'),]
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract certain plots
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+
+#I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph'),]
+
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+#library(lubridate)
+I_scap_N$Month <-month(as.POSIXlt(I_scap_N$collectDate, format = "%Y-%m- %d"))
+
+unique(I_scap_N$site)
+
+```
+
+give regions
+```{r}
+
+I_scap_N$region <- I_scap_N$site
+I_scap_N$region[I_scap_N$site == "BART"] <- "northeast"
+I_scap_N$region[I_scap_N$site == "HARV"] <- "northeast"
+I_scap_N$region[I_scap_N$site == "BLAN"] <- "midatlantic"
+I_scap_N$region[I_scap_N$site == "SCBI"] <- "midatlantic"
+I_scap_N$region[I_scap_N$site == "SERC"] <- "midatlantic" 
+I_scap_N$region[I_scap_N$site == "STEI"] <- "great lakes"
+I_scap_N$region[I_scap_N$site == "TREE"] <- "great lakes"
+I_scap_N$region[I_scap_N$site == "UNDE"] <- "great lakes"
+I_scap_N$region[I_scap_N$site == "OSBS"] <- "southeast"
+I_scap_N$region[I_scap_N$site == "KONA"] <- "praire peninsula"
+I_scap_N$region[I_scap_N$site == "KONZ"] <- "praire peninsula"
+I_scap_N$region[I_scap_N$site == "UKFS"] <- "praire peninsula"
+I_scap_N$region[I_scap_N$site == "GRSM"] <- "appalachians"
+I_scap_N$region[I_scap_N$site == "MLBS"] <- "appalachians"
+I_scap_N$region[I_scap_N$site == "ORNL"] <- "appalachians"
+I_scap_N$region[I_scap_N$site == "DELA"] <- "ozarks"
+I_scap_N$region[I_scap_N$site == "LENO"] <- "ozarks"
+I_scap_N$region[I_scap_N$site == "TALL"] <- "ozarks"
+I_scap_N$region[I_scap_N$site == "RMNP"] <- "southern rockies"
+I_scap_N$region[I_scap_N$site == "OAES"] <- "southern plaines"
+I_scap_N$region[I_scap_N$site == "ABBY"] <- "pacific northwest"
+
+ 
+
+#View(I_scap_N)
+
+```
+
+
+```{r}
+I_scap_N_regions <- I_scap_N[which(I_scap_N$region != 'pacific northwest' & I_scap_N$region != 'southern plaines' & I_scap_N$region != 'southern rockies'),]
+
+DateVec16<- seq(from = as.Date("2016-03-01"), to = (as.Date("2016-11-30")), by = 1)
+DateVec17<- seq(from = as.Date("2017-03-01"), to = (as.Date("2017-11-30")))
+DateVec18<- seq(from = as.Date("2018-03-01"), to = (as.Date("2018-11-30")))
+DateVec18<- seq(from = as.Date("2019-03-01"), to = (as.Date("2019-11-30")))
+
+#library(ggplot2)
+ggplot(data = I_scap_N_regions,
+aes(y = individualCount, x = collectDate))+
+  facet_wrap(~region, scale = 'free_y',ncol = 3)+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold'))+
+  geom_point() +
+  #geom_smooth(se = FALSE, color = 'red')+
+  #stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), alpha = .3)+
+  clean_background +
+  theme(axis.text.x = element_text(angle = 45, size = 2, vjust = 0.5))+
+  ytitletheme +
+  xtitletheme 
+```
+

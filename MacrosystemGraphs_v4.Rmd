@@ -398,8 +398,309 @@ I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 ```
 
+*version 4*
+
+total ticks and regions
+
+```{r}
+
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract certain plots
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+#head(ticks_taxa)
+
+#plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+
+# select columns
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+
+Iscap <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva' | ticks_taxa2$sexOrAge == 'Nymph'),]
+                                
+Iscap<- Iscap[which(Iscap$scientificName == 'Ixodidae sp.' |
+                          Iscap$scientificName == 'Ixodes scapularis' |
+                            Iscap$scientificName == 'Ixodidae spp.' |
+                            Iscap$scientificName == 'Ixodida sp.' |
+                            Iscap$scientificName == 'Ixodes spp.' |
+                            Iscap$scientificName == 'Ixodes spp.' |
+                            Iscap$scientificName == 'Ixodes pacificus'), ]
+
+unique(Iscap$scientificName)
+sapply(Iscap, class)
+Iscap$collectDate <- as.character(Iscap$collectDate)
+
+Iscap$collectDate <- substr(Iscap$collectDate, 1, nchar(Iscap$collectDate)-7)
+#head(Iscap)
+
+Iscap$collectDate <- as.factor(Iscap$collectDate)
+Iscap$plotID <- unlist(Iscap$plotID)
+Iscap$collectDate <- as.character(Iscap$collectDate)
+Iscap$Year <- substr(Iscap$collectDate, 1, nchar(Iscap$collectDate)-6)
+#head(Iscap)
+
+
+Iscap$Month <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate)-3)
+Iscap$Weeks <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate))
+
+
+Iscap$region <- Iscap$site
+Iscap$region[Iscap$site == "BART"] <- "northeast"
+Iscap$region[Iscap$site == "HARV"] <- "northeast"
+Iscap$region[Iscap$site == "BLAN"] <- "midatlantic"
+Iscap$region[Iscap$site == "SCBI"] <- "midatlantic"
+Iscap$region[Iscap$site == "SERC"] <- "midatlantic" 
+Iscap$region[Iscap$site == "STEI"] <- "great lakes"
+Iscap$region[Iscap$site == "TREE"] <- "great lakes"
+Iscap$region[Iscap$site == "UNDE"] <- "great lakes"
+Iscap$region[Iscap$site == "OSBS"] <- "southeast"
+Iscap$region[Iscap$site == "KONA"] <- "praire"
+Iscap$region[Iscap$site == "KONZ"] <- "praire"
+Iscap$region[Iscap$site == "UKFS"] <- "praire"
+Iscap$region[Iscap$site == "GRSM"] <- "appalachians"
+Iscap$region[Iscap$site == "MLBS"] <- "appalachians"
+Iscap$region[Iscap$site == "ORNL"] <- "appalachians"
+Iscap$region[Iscap$site == "DELA"] <- "southeast"
+Iscap$region[Iscap$site == "LENO"] <- "southeast"
+Iscap$region[Iscap$site == "TALL"] <- "southeast"
+Iscap$region[Iscap$site == "RMNP"] <- "west"
+Iscap$region[Iscap$site == "OAES"] <- "southeast"
+Iscap$region[Iscap$site == "ABBY"] <- "west"
+
+keyregions <- Iscap[which(Iscap$region != "west" & Iscap$region != "JORN"), ]
+
+
+#Weeklycounts <- Iscap  %>%
+  #group_by(Weeks, region, sexOrAge) %>%
+  #summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+Key <- keyregions  %>%
+  group_by(Weeks, region, sexOrAge) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+
+#unique(keyregions$region)
+ # Keyregions <- Key  %>%
+ #  group_by(Weeks, region, sexOrAge) %>%
+ #  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+Key$region = factor(Key$region, 
+                            levels = c("northeast",
+                                       "great lakes",
+                                       "midatlantic",
+                                       "praire",
+                                       "southeast",
+                                       "appalachians"),
+                    labels = c("Northeast",
+                                       "Great lakes",
+                                       "Mid Atlantic",
+                                       "Praire",
+                                       "Southeast",
+                                       "Appalachians"))
+
+
+ggplot(Key, aes(y = log(sum_counts), x = Weeks, group = sexOrAge, color = sexOrAge, fill =sexOrAge ))+
+  #geom_smooth(se = FALSE)+
+  #geom_area(aes(fill = sexOrAge), alpha = .5)+
+  #geom_bar(stat = 'identity')+
+  geom_density(stat = 'identity', alpha = .6)+
+  facet_wrap(~ region, scale = 'free_y', ncol = 2)+
+#aes(fill = site),alpha = .8)+
+  clean_background  +
+  #coord_cartesian(ylim = c(0,10))+
+  theme(axis.text.x = element_text(angle = 90, size = 4, vjust = 0.5))+
+    theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  theme(axis.text.x=element_text(size=2))+
+  labs(y = 'Log(tick counts)\n (2016 - 2019)', x = 'Collection Dates')+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 12, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 12))+
+  labs(fill = "Life stage")+
+   guides(fill = guide_legend(order = 1),
+         color = FALSE)
+  #guide_legend(title="Life stage")
+  #scale_fill_manual(legend_title,values=c("orange","red"))
+  #guides(fill=guide_legend(title="Life stage"))
+```
+
+
+
+larval by week
+```{r}
+#library(tidyverse)
+#larve
+I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva' & ticks_taxa2$scientificName == 'Ixodidae sp.' |
+                          ticks_taxa2$scientificName == 'Ixodes scapularis' |
+                            ticks_taxa2$scientificName == 'Ixodidae spp.' |
+                            ticks_taxa2$scientificName == 'Ixodida sp.' |
+                            ticks_taxa2$scientificName == 'Ixodes spp.' |
+                            ticks_taxa2$scientificName == 'Ixodes spp.' |
+                            ticks_taxa2$scientificName == 'Ixodes pacificus'), ]
+
+unique(I_scap_L$scientificName)
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_L, class)
+I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
+
+I_scap_L$collectDate <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_L$collectDate <- as.factor(I_scap_L$collectDate)
+I_scap_L$plotID <- unlist(I_scap_L$plotID)
+I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
+I_scap_L$Year <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_L$Month <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate)-3)
+I_scap_L$Weeks <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate))
+
+weeklycounts <- I_scap_L  %>%
+  group_by(Weeks, site) %>%
+  summarise(sum_countsL = sum(individualCount), .groups = 'drop')
+
+monthlycounts <- I_scap_L  %>%
+  group_by(Month, site) %>%
+  summarise(sum_countsL = sum(individualCount), .groups = 'drop')
+View(monthlycounts)
+
+sitecounts <- I_scap_L  %>%
+  group_by(site) %>%
+  summarise(sum_countsL = sum(individualCount), .groups = 'drop')
+View(sitecounts)
+
+newsites <- sitecounts[which(sitecounts$sum_countsL > 10), ]
+
+newsitesE<- weeklycounts[which(weeklycounts$site == 'HARV' | weeklycounts$site == 'BLAN' | weeklycounts$site == 'SCBI' | weeklycounts$site == 'SERC' | weeklycounts$site == 'OSBS' | weeklycounts$site == 'STEI' | weeklycounts$site == 'TREE' | weeklycounts$site == 'UNDE' | weeklycounts$site == 'GRSM' | weeklycounts$site == 'MLBS' | weeklycounts$site == 'ORNL' | weeklycounts$site == 'TALL' | weeklycounts$site == 'KONZ' | weeklycounts$site == 'LENO' |weeklycounts$site == 'OAES' | weeklycounts$site == 'TALL'), ]
+
+newsitesEE<- weeklycounts[which(weeklycounts$site == 'HARV' | weeklycounts$site == 'BLAN' | weeklycounts$site == 'SCBI' | weeklycounts$site == 'SERC' | weeklycounts$site == 'OSBS' | weeklycounts$site == 'STEI' | weeklycounts$site == 'TREE' | weeklycounts$site == 'ORNL' | weeklycounts$site == 'TALL'), ]
+
+
+newsitesEE<- newsitesEE[which(newsitesEE$Weeks > "05-02"), ]
+View(newsitesEE)
+## put into regions
+newsitesEE$region <- newsitesEE$site
+newsitesEE$region[newsitesEE$site == "HARV"] <- "northeast"
+newsitesEE$region[newsitesEE$site == "BLAN"] <- "midatlantic"
+newsitesEE$region[newsitesEE$site == "SCBI"] <- "midatlantic"
+newsitesEE$region[newsitesEE$site == "SERC"] <- "midatlantic" 
+newsitesEE$region[newsitesEE$site == "STEI"] <- "great lakes"
+newsitesEE$region[newsitesEE$site == "TREE"] <- "great lakes"
+newsitesEE$region[newsitesEE$site == "OSBS"] <- "southeast"
+newsitesEE$region[newsitesEE$site == "ORNL"] <- "southeast"
+newsitesEE$region[newsitesEE$site == "TALL"] <- "southeast"
+View(newsitesEE)
+
+ggplot(newsitesE, aes(y = sum_countsL, x = Weeks, group = site, color = site))+
+  #geom_smooth(se = FALSE)+
+  geom_area(aes(fill = site), alpha = .5)+
+#aes(fill = site),alpha = .8)+
+  clean_background  +
+  coord_cartesian(ylim = c(0,1550))+
+  theme(axis.text.x = element_text(angle = 90, size = 6, vjust = 0.5))+
+    theme(legend.position = 'bottom', legend.box = 'horizontal')
+
+## regional
+ggplot(newsitesEE, aes(y = sum_countsL, x = Weeks, group = region, color = region))+
+  #geom_smooth(se = FALSE)+
+  geom_area(position = 'stack', aes(fill = region), alpha = .5)+
+#aes(fill = site),alpha = .8)+
+  clean_background  +
+  coord_cartesian(ylim = c(0,1500))+
+  theme(axis.text.x = element_text(angle = 90, size = 6, vjust = 0.5))+
+    theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  #scale_x_discrete(expand = c(0,0)) +
+  theme(axis.text.x=element_text(size=6))
+
+
+
+
+ggplot(monthlycounts, aes(y = sum_countsL, x = Month, group = site, color = site))+
+  #geom_smooth(se = FALSE)+
+  geom_area(aes(fill = site), alpha = .5)+
+#aes(fill = site),alpha = .8)+
+  clean_background 
+
+```
+
+
+nymphs by week 
+
+```{r completed geom area}
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
+I_scap_N$Weeks <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate))
+
+collected <- I_scap_N %>%
+  group_by(Weeks, site) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+View(collected)
+
+collected <- collected[which(collected$site == 'HARV' |
+                                       collected$site == 'SCBI' |
+                               collected$site == 'ORNL'),]
+collected$site = factor(collected$site, 
+                            levels = c('HARV',
+                                       'SCBI',
+                                       'ORNL'),
+                            labels = c('HARV - NORTHEAST',
+                                       'SCBI - MID ATLANTIC',
+                                       'ORNL - APPALACHIANS'))
+
+ggplot(collected, aes(y = sum_counts, x = Weeks, group = site, color = site))+
+  #geom_smooth(se = FALSE)+
+  geom_area(position = 'stack', aes(fill = site), alpha = .8)+
+#aes(fill = site),alpha = .8)+
+  clean_background +
+  geom_vline(xintercept = 5.5, alpha = .3, ) +
+  geom_vline(xintercept = 21.5, alpha = .3, ) +
+  geom_vline(xintercept = 40.5, alpha = .3, ) +
+  geom_vline(xintercept = 60.5, alpha = .3, ) +
+  geom_vline(xintercept = 77.5, alpha = .3, ) +
+  geom_vline(xintercept = 88.5, alpha = .3, ) +
+  labs(y = 'Summed nymph counts\n (2016 - 2019)', x = 'Collection Dates') +
+  #labs(fill = "Site")+
+  theme(axis.title.y =  element_text(face = 'bold',size = 12))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 12))+
+  #scale_x_continuous(breaks = round(seq(min(collected$Month), max(collected$Month))))+
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+  theme(legend.position = c(.75, .7))+
+  #theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  theme(axis.text.x = element_text(angle = 90, size = 6, vjust = 0.5))+
+  annotate(geom = "text", x = 9, y = 80, label = "May", size = 3.5) + 
+  annotate(geom = "text", x = 25, y = 80, label = "June", size = 3.5) +
+  annotate(geom = "text", x = 44, y = 80, label = "July", size = 3.5)+
+  annotate(geom = "text", x = 65, y = 80, label = "August", size = 3.5)+
+  annotate(geom = "text", x = 83, y = 80, label = "September", size = 3.5)
+ggsave("geomareanymphweeks.pdf", dpi = 320)
+
+  
+
+```
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *version 3 on 10/2/20*
 
+  
 
 ```{r}
 #Nymphs
@@ -621,79 +922,6 @@ ggsave("geomareanymphweeks.pdf", dpi = 320)
 
 ```
 
-larval by week
-```{r}
-#Nymphs
-I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva'),]
-#head(I_scap_N)
-#nrow(I_scap_N)
-sapply(I_scap_L, class)
-I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
-
-I_scap_L$collectDate <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-7)
-#head(I_scap_N)
-
-I_scap_L$collectDate <- as.factor(I_scap_L$collectDate)
-I_scap_L$plotID <- unlist(I_scap_L$plotID)
-I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
-I_scap_L$Year <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-6)
-#head(I_scap_N)
-
-I_scap_L$Month <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate)-3)
-I_scap_L$Weeks <- substr(I_scap_L$collectDate, 6, nchar(I_scap_L$collectDate))
-
-collectedL <- I_scap_L %>%
-  group_by(Weeks, site) %>%
-  summarise(sum_countsL = sum(individualCount), .groups = 'drop')
-View(collectedLE)
-
-collectedLE<- collectedL[which(collectedL$site == 'BART' | collectedL$site == 'HARV' | collectedL$site == 'BLAN' | collectedL$site == 'SCBI' | collectedL$site == 'SERC' | collectedL$site == 'OSBS' | collectedL$site == 'STEI' | collectedL$site == 'TREE' | collectedL$site == 'UNDE' | collectedL$site == 'GRSM' | collectedL$site == 'MLBS' | collectedL$site == 'ORNL' | collectedL$site == 'TALL'),]
-
-
-#'HARV' |
-                                      # collectedL$site == 'SCBI' |
-                               #collectedL$site == 'ORNL'),]
-# collectedL$site = factor(collectedL$site, 
-#                             levels = c('HARV',
-#                                        'SCBI',
-#                                        'ORNL'),
-#                             labels = c('HARV - NORTHEAST',
-#                                        'SCBI - MID ATLANTIC',
-#                                        'ORNL - APPALACHIANS'))
-
-ggplot(collectedLE, aes(y = sum_countsL, x = Weeks, group = site, color = site))+
-  #geom_smooth(se = FALSE)+
-  geom_area(position = 'stack', aes(fill = site), alpha = .8)+
-#aes(fill = site),alpha = .8)+
-  clean_background +
-  geom_vline(xintercept = 12.5, alpha = .3, ) +
-  geom_vline(xintercept = 23.5, alpha = .3, ) +
-  geom_vline(xintercept = 48.5, alpha = .3, ) +
-  geom_vline(xintercept = 73.5, alpha = .3, ) +
-  geom_vline(xintercept = 102.5, alpha = .3, ) +
-  geom_vline(xintercept = 127.5, alpha = .3, ) +
-  labs(y = 'Summed larval counts\n (2016 - 2019)', x = 'Collection Dates') +
-  #labs(fill = "Site")+
-  theme(axis.title.y =  element_text(face = 'bold',size = 12))+
-  theme(axis.title.x =  element_text(face = 'bold',size = 12))+
-  #scale_x_continuous(breaks = round(seq(min(collected$Month), max(collected$Month))))+
-  theme(axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-  theme(legend.position = c(.08, .52))+
-  theme(legend.position = 'bottom', legend.box = 'horizontal')+
-  theme(axis.text.x = element_text(angle = 90, size = 6, vjust = 0.5))+
-  annotate(geom = "text", x = 17.5, y = 2600, label = "May", size = 3.5) + 
-  annotate(geom = "text", x = 29, y = 2600, label = "June", size = 3.5) +
-  annotate(geom = "text", x = 53, y = 2600, label = "July", size = 3.5)+
-  annotate(geom = "text", x = 82, y = 2600, label = "August", size = 3.5)+
-  annotate(geom = "text", x = 114, y = 2600, label = "September", size = 3.5)+
-  annotate(geom = "text", x = 137, y = 2600, label = "October", size = 3.5)+
-  coord_cartesian(ylim = c(0,2550))
-ggsave("geomarealarvaweeks.pdf", dpi = 320)
-
-
-```
-
-
 
 geom_area
 ```{r}
@@ -789,6 +1017,7 @@ aes(y = sum_counts, x = Month))+
 
 
 incidence
+
 ```{r}
 # extract Year
 tick_path_Bb_col_E$Year <- substr(tick_path_Bb_col_E$Date, 1, nchar(tick_path_Bb_col_E$Date)-6)

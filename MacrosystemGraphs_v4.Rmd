@@ -398,6 +398,120 @@ I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 ```
 
+
+
+total ticks by site fill by life stage
+```{r}
+
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract certain plots
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+#head(ticks_taxa)
+
+#plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+
+# select columns
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+
+Iscap <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva' | ticks_taxa2$sexOrAge == 'Nymph'),]
+                                
+Iscap<- Iscap[which(Iscap$scientificName == 'Ixodidae sp.' |
+                          Iscap$scientificName == 'Ixodes scapularis' |
+                            Iscap$scientificName == 'Ixodidae spp.' |
+                            Iscap$scientificName == 'Ixodida sp.' |
+                            Iscap$scientificName == 'Ixodes spp.' |
+                            Iscap$scientificName == 'Ixodes spp.' |
+                            Iscap$scientificName == 'Ixodes pacificus'), ]
+
+unique(Iscap$scientificName)
+sapply(Iscap, class)
+Iscap$collectDate <- as.character(Iscap$collectDate)
+
+Iscap$collectDate <- substr(Iscap$collectDate, 1, nchar(Iscap$collectDate)-7)
+#head(Iscap)
+
+Iscap$collectDate <- as.factor(Iscap$collectDate)
+Iscap$plotID <- unlist(Iscap$plotID)
+Iscap$collectDate <- as.character(Iscap$collectDate)
+Iscap$Year <- substr(Iscap$collectDate, 1, nchar(Iscap$collectDate)-6)
+#head(Iscap)
+
+
+Iscap$Month <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate)-3)
+Iscap$Weeks <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate))
+
+
+sitesync <- Iscap  %>%
+  group_by(Weeks, site, sexOrAge) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+
+#regionnumbers
+#names(regionnumbers)[1] <- "Region"
+#names(regionnumbers)[2] <- 'Life stage'
+
+#tt <- ttheme_default(colhead=list(fg_params = list(parse=TRUE)))
+#tbl <- tableGrob(regionnumbers, rows=NULL, theme=tt)
+
+
+ # Keyregions <- Key  %>%
+ #  group_by(Weeks, region, sexOrAge) %>%
+ #  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+
+
+# Key$region = factor(Key$region, 
+#                              levels = c("northeast",
+#                                         "great lakes",
+#                                         "midatlantic",
+#                                         "praire",
+#                                         "southeast",
+#                                         "appalachians"),
+#                     labels = c("Northeast (L = 2163, N = 569)",
+#                                        "Great lakes (L = 2004, N = 885)",
+#                                        "Mid Atlantic (L = 13808, N = 1413)",
+#                                        "Praire (L = 162760, N = 118)",
+#                                        "Southeast (L = 7951, N = 455)",
+#                                        "Appalachians (L = 7325, N = 164)"))
+
+
+  ggplot(sitesync, aes(y = log(sum_counts), x = Weeks, group = sexOrAge, color = sexOrAge, fill =sexOrAge ))+
+  geom_density(stat = 'identity', alpha = .6)+
+  facet_wrap(~ site, scale = 'free_y', ncol = 2)+
+  clean_background  +
+  theme(axis.text.x = element_text(angle = 90, size = 4, vjust = 0.5))+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  labs(y = 'Log(tick counts) (2016 - 2019)', x = 'Collection Dates')+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 12, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 12))+
+  labs(fill = "Life stage")+
+   guides(fill = guide_legend(order = 1),color = FALSE)+
+    theme(legend.title = element_text(size = 7),legend.text = element_text(size = 7))+
+    #scale_x_discrete(breaks = Key$Weeks[c(T,F,F, F, F, F, F, F,F, F, F, F, F,  F, F, F, F, F, F, F)]) +
+    theme(legend.position = c(.96, .97))+
+    theme(legend.box.margin = margin(0, 0, 0, 0))+
+    #geom_vline(xintercept = 10.5, alpha = .3 ) +
+    geom_vline(xintercept = 24.5, alpha = .3 ) +
+    geom_vline(xintercept = 49.5, alpha = .3 ) +
+    geom_vline(xintercept = 74.5, alpha = .3 ) +
+    geom_vline(xintercept = 105.5, alpha = .3 ) +
+    geom_vline(xintercept = 134.5, alpha = .3 ) +
+    geom_vline(xintercept = 160.5, alpha = .3 )+
+  annotate(geom = "text", x = 36, y = -.5, label = "May", size = 2) +
+  annotate(geom = "text", x = 62, y = -.5, label = "June", size = 2) +
+  annotate(geom = "text", x = 91, y = -.5, label = "July", size = 2) +
+  annotate(geom = "text", x = 121.7, y = -.5, label = "Aug.", size = 2)+
+  annotate(geom = "text", x = 148.7, y = -.5, label = "Sep.", size = 2)
+ggsave("geomaregionweeks.pdf", dpi = 320)
+
+```
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *version 4*
 
 total ticks and regions
@@ -478,50 +592,81 @@ Key <- keyregions  %>%
   group_by(Weeks, region, sexOrAge) %>%
   summarise(sum_counts = sum(individualCount), .groups = 'drop')
 
+#regionnumbers <- keyregions  %>%
+ # group_by(region, sexOrAge) %>%
+  #summarise(sum_counts = sum(individualCount), .groups = 'drop')
+#View(regionnumbers)
 
-#unique(keyregions$region)
+#regionnumbers
+#names(regionnumbers)[1] <- "Region"
+#names(regionnumbers)[2] <- 'Life stage'
+
+#tt <- ttheme_default(colhead=list(fg_params = list(parse=TRUE)))
+#tbl <- tableGrob(regionnumbers, rows=NULL, theme=tt)
+
+
  # Keyregions <- Key  %>%
  #  group_by(Weeks, region, sexOrAge) %>%
  #  summarise(sum_counts = sum(individualCount), .groups = 'drop')
 
+
+
 Key$region = factor(Key$region, 
-                            levels = c("northeast",
-                                       "great lakes",
-                                       "midatlantic",
-                                       "praire",
-                                       "southeast",
-                                       "appalachians"),
-                    labels = c("Northeast",
-                                       "Great lakes",
-                                       "Mid Atlantic",
-                                       "Praire",
-                                       "Southeast",
-                                       "Appalachians"))
+                             levels = c("northeast",
+                                        "great lakes",
+                                        "midatlantic",
+                                        "praire",
+                                        "southeast",
+                                        "appalachians"),
+                    labels = c("Northeast (L = 2163, N = 569)",
+                                       "Great lakes (L = 2004, N = 885)",
+                                       "Mid Atlantic (L = 13808, N = 1413)",
+                                       "Praire (L = 162760, N = 118)",
+                                       "Southeast (L = 7951, N = 455)",
+                                       "Appalachians (L = 7325, N = 164)"))
 
 
-ggplot(Key, aes(y = log(sum_counts), x = Weeks, group = sexOrAge, color = sexOrAge, fill =sexOrAge ))+
-  #geom_smooth(se = FALSE)+
-  #geom_area(aes(fill = sexOrAge), alpha = .5)+
-  #geom_bar(stat = 'identity')+
+#regionale <-
+  ggplot(Key, aes(y = log(sum_counts), x = Weeks, group = sexOrAge, color = sexOrAge, fill =sexOrAge ))+
   geom_density(stat = 'identity', alpha = .6)+
   facet_wrap(~ region, scale = 'free_y', ncol = 2)+
-#aes(fill = site),alpha = .8)+
   clean_background  +
-  #coord_cartesian(ylim = c(0,10))+
   theme(axis.text.x = element_text(angle = 90, size = 4, vjust = 0.5))+
-    theme(legend.position = 'bottom', legend.box = 'horizontal')+
-  theme(axis.text.x=element_text(size=2))+
-  labs(y = 'Log(tick counts)\n (2016 - 2019)', x = 'Collection Dates')+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  labs(y = 'Log(tick counts) (2016 - 2019)', x = 'Collection Dates')+
   theme(strip.background = element_rect(fill = 'gray95'))+
   theme(strip.text.x = element_text(face = 'bold')) +
   theme(axis.title.y =  element_text(face = 'bold',size = 12, vjust = .5))+
   theme(axis.title.x =  element_text(face = 'bold',size = 12))+
   labs(fill = "Life stage")+
-   guides(fill = guide_legend(order = 1),
-         color = FALSE)
-  #guide_legend(title="Life stage")
+   guides(fill = guide_legend(order = 1),color = FALSE)+
+    theme(legend.title = element_text(size = 7),legend.text = element_text(size = 7))+
+    #scale_x_discrete(breaks = Key$Weeks[c(T,F,F, F, F, F, F, F,F, F, F, F, F,  F, F, F, F, F, F, F)]) +
+    theme(legend.position = c(.96, .97))+
+    theme(legend.box.margin = margin(0, 0, 0, 0))+
+    #geom_vline(xintercept = 10.5, alpha = .3 ) +
+    geom_vline(xintercept = 24.5, alpha = .3 ) +
+    geom_vline(xintercept = 49.5, alpha = .3 ) +
+    geom_vline(xintercept = 74.5, alpha = .3 ) +
+    geom_vline(xintercept = 105.5, alpha = .3 ) +
+    geom_vline(xintercept = 134.5, alpha = .3 ) +
+    geom_vline(xintercept = 160.5, alpha = .3 )+
+  annotate(geom = "text", x = 36, y = -.5, label = "May", size = 2) +
+  annotate(geom = "text", x = 62, y = -.5, label = "June", size = 2) +
+  annotate(geom = "text", x = 91, y = -.5, label = "July", size = 2) +
+  annotate(geom = "text", x = 121.7, y = -.5, label = "Aug.", size = 2)+
+  annotate(geom = "text", x = 148.7, y = -.5, label = "Sep.", size = 2)
+ggsave("geomaregionweeks.pdf", dpi = 320)
+
+
+#ggarrange(regionale, tbl)
+
+
+    #guide_legend(title="Life stage")
   #scale_fill_manual(legend_title,values=c("orange","red"))
   #guides(fill=guide_legend(title="Life stage"))
+
+
 ```
 
 
@@ -1113,6 +1258,31 @@ tick_path_Bb_col_E$site = factor(tick_path_Bb_col_E$plotID,
 totalticks <- aggregate(individualCount ~ site, data=I_scap_N, FUN=sum)
 names(totalticks)[1] <- "Site"
 names(totalticks)[2] <- 'Total ticks'
+
+```
+
+```{r}
+
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_N$Month <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate)-3)
+I_scap_N$Weeks <- substr(I_scap_N$collectDate, 6, nchar(I_scap_N$collectDate))
+
+
 totalticks$Site = factor(totalticks$Site, 
                             levels = c("HARV",
                                        "TREE",
@@ -1129,8 +1299,8 @@ totalticks$Site = factor(totalticks$Site,
 
 totalticks   <- subset(totalticks, !is.na(Site))                           
                                     
- ggplot(as.data.frame(totalticks), aes(x = site, y = individualCount))+
-   geom_point()
+ #ggplot(as.data.frame(totalticks), aes(x = Site, y = individualCount))+
+  # geom_point()
  
 
 
@@ -1149,8 +1319,8 @@ tbl <- tableGrob(totalticks, rows=NULL, theme=tt)
 
 #library(cowplot)
 
-ggplot(totalticks, aes(y = individualCount, x = plotID))+
-  geom_point()                                      
+#ggplot(totalticks, aes(y = individualCount, x = plotID))+
+  #geom_point()                                      
                                        
 # remove NA                                     
 tick_path_Bb_col_E   <- subset(tick_path_Bb_col_E, !is.na(plotID))                           
@@ -1169,9 +1339,9 @@ ggplot(tick_path_Bb_col_E, aes(x = incidence, y = plotID))+
 ggsave("bbincidenceboxplotwithtable.pdf", dpi = 320)
 
 
-ggarrange(x,tbl,
-          widths = c(1, .3),
-          heights = c(1,.5,.3)) 
+#ggarrange(x,tbl,
+          #widths = c(1, .3),
+         # heights = c(1,.5,.3)) 
 
   # annotate(geom = "text", x = .9, y = 37.1, label = "NORTHEAST", size = 3.5, color = 'red')+
   # annotate(geom = "text", x = .9, y = 27.7, label = "GREAT LAKES", size = 3.5, color = 'red') +
@@ -1187,14 +1357,6 @@ ggplot(tick_path_Bb_col_E, aes(incidence))+
     scale_x_discrete(limits = rev(levels(tick_path_Bb_col_E$plotID)))+
   clean_background + 
   coord_flip()
-  
-  
-  theme(axis.text.y = element_text(size = 5.7, vjust = 0.9))+
-  titleytheme +
-  geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
-  labs(x = "B. burgdorferi incidence", y = "SiteID") +
-  scale_x_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
-  xtitletheme 
 
 
 #unique(tick_path_Bb_col_E$site)

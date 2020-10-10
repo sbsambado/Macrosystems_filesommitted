@@ -47,6 +47,7 @@ library(ggpubr)
 library(lubridate)
 library(caret)
 library(splines)
+library(cowplot)
 
 clean_background <- theme(plot.background = element_rect("white"),
         panel.background = element_rect("white"),
@@ -103,6 +104,7 @@ tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/sta
 # Andy's code to tidy up csv's
 
 **Ticks**
+
 ```{r andy tidying csvs}
 ############## working thorugh tick taxa data frame #######
 #unique(ticks_taxa$scientificName)
@@ -170,7 +172,7 @@ ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
 
 ```
 
-Nymphs
+*Nymphs*
 ```{r}
 ######## Ixodes 
 
@@ -203,6 +205,7 @@ I_scap_N_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 ```
 
+*Larvae*
 ```{r}
 #Larvae:
 I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva'),]
@@ -383,8 +386,7 @@ mamsTrap_captures_N_col_E <- mamsTrap_captures_N_col[which(mamsTrap_captures_N_c
 #head(mamsTrap_captures_N_col_E)
 ```
 
-
-Aggregated tick data
+*Aggregated tick data*
 ```{r aggregated tick data}
 
 # aggregagted larva
@@ -398,12 +400,12 @@ I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, 
 
 ```
 
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *version 6*
 
-#Questions fromMark
+#Questions from Mark
 
-**1. Time scale of sampling.  Are there multiple tick sampling events at a site within a year? **
+**1. Time scale of sampling.  Are there multiple tick sampling events at a site within a year?**
 
 ```{r}
 # treat plot ID as character
@@ -448,6 +450,7 @@ Iscap$Weeks <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate))
 # filter out sites
 total <- Iscap[which(Iscap$site != 'DELA' & Iscap$site != 'KONA' & Iscap$site != 'KONZ' & Iscap$site != 'LENO' & Iscap$site != 'UKFS' & Iscap$site != 'JORN'  & Iscap$site != 'ABBY' & Iscap$site != 'OAES'),]
 
+sum(Iscap$individualCount)
 unique(total$site)
 
 totticks <- total   %>%
@@ -469,6 +472,7 @@ ggplot(totticks, aes(x = Year, y = freq))+
   clean_background+
   labs(y = 'Sampling frequency', x = 'Site', title = 'Tick sampling frequency by year')+
   ytitletheme + xtitletheme
+ggsave("TickSamplingFrequencyYear_v1.pdf", dpi = 320)
 
 monthtotticks <- total   %>%
   group_by(site, Month) %>%
@@ -482,6 +486,8 @@ ggplot(monthtotticks, aes(x = Month, y = freq))+
   clean_background+
   labs(y = 'Sampling frequency', x = 'Site', title = 'Tick sampling frequency by month')+
   ytitletheme + xtitletheme
+ggsave("TickSamplingFrequencyMonth_v1.pdf", dpi = 320)
+
 
 
 ```
@@ -565,6 +571,7 @@ ggplot(yeartrapsite, aes(x = Year, y = freq))+
   clean_background+
   labs(y = 'Sampling frequency', x = 'Site', title = 'Mammal sampling frequency by year')+
   ytitletheme + xtitletheme
+ggsave("MammalSamplingFrequencyYear_v1.pdf", dpi = 320)
 
 monthtrapsite <- trapped   %>%
   group_by(site, Month) %>%
@@ -578,11 +585,13 @@ ggplot(monthtrapsite, aes(x = Month, y = freq))+
   clean_background+
   labs(y = 'Sampling frequency', x = 'Site', title = 'Mammal sampling frequency by month')+
   ytitletheme + xtitletheme
+ggsave("MammalSamplingFrequencyMonth_v1.pdf", dpi = 320)
 
 ```
 
 **3. What are the data like (if they exist) for B. burgdorferi prevalence at particular sites?**
 
+Incidence across selected sites (>150 ticks tested)
 ```{r}
 tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)
 
@@ -706,6 +715,7 @@ x <- ggplot(tick_path_Bb_col_E, aes(x = incidence, y = plotID))+
 ggarrange(x,tbl,
           widths = c(1, .3),
           heights = c(1,.5,.3)) 
+ggsave("BbIncidenceTicksPlotID_v1.pdf", dpi = 320)
 
   # annotate(geom = "text", x = .9, y = 37.1, label = "NORTHEAST", size = 3.5, color = 'red')+
   # annotate(geom = "text", x = .9, y = 27.7, label = "GREAT LAKES", size = 3.5, color = 'red') +
@@ -718,7 +728,7 @@ ggarrange(x,tbl,
 
 ```
 
-incidence across all sites
+Incidence across all sites
 
 ```{r}
 tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)
@@ -762,7 +772,7 @@ ggplot(tick_path_Bb_col, aes(x = incidence, y = plotID))+
   clean_background +
   theme(axis.text.y = element_text(size = 5.7, vjust = 0.9))+
   titleytheme +
-  geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
+  #geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
   labs(x = "B. burgdorferi incidence", y = "plotID", title = 'B. burgdorferi incidence in questing ticks') +
   scale_x_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
   xtitletheme 
@@ -776,6 +786,17 @@ pos<- tick_path_Bb_col %>%
   #select(larvaeYN == 1)%>%
   slice(1) %>% # takes the first occurrence if there is a tie
   ungroup()
+
+ggplot(pos, aes(x = incidence, y = plotID))+
+  geom_bar(stat = 'identity',fill = 'gray79', na.rm = TRUE)+
+  #scale_y_discrete(limits = rev(levels(tick_path_Bb_col_E$plotID)))+
+  clean_background +
+  theme(axis.text.y = element_text(size = 5.7, vjust = 0.9))+
+  titleytheme +
+  #geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
+  labs(x = "B. burgdorferi incidence", y = "plotID", title = 'B. burgdorferi incidence in questing ticks') +
+  #scale_x_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
+  xtitletheme
 
 possite<- tick_path_Bb_col %>% 
   mutate(possites = incidence) %>% 
@@ -798,6 +819,8 @@ ggplot(possite, aes(x = incidence, y = site))+
   xtitletheme+
   ylim( "OSBS","TALL", "ORNL","UKFS", "KONZ",
         "SCBI", "BLAN","SERC","TREE", "HARV" )
+ggsave("BbIncidenceTicksSite_v1.pdf", dpi = 320)
+
 
 
 ```
@@ -806,7 +829,7 @@ ggplot(possite, aes(x = incidence, y = site))+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *version 5*
 
-total ticks by site fill by life stage
+Total ticks by site fill by life stage
 ```{r}
 
 # treat plot ID as character
@@ -1122,14 +1145,14 @@ optimal$site = factor(optimal$site,
   annotate(geom = "text", x = 62, y = 5.7, label = "July", size = 2.5) +
   annotate(geom = "text", x = 87, y = 5.7, label = "August", size = 2.5) +
   annotate(geom = "text", x = 110.7, y = 5.7, label = "September", size = 2.5)
-  #ggsave("geom_keysites_weeks_v1.pdf", dpi = 320)
+ggsave("TickLifestagePhenologySite_v1.pdf", dpi = 320)
 
 
 ```
 
 
 
-first time mammal data point pops up
+First time mammal data point pops up
 
 ```{r}
 # select only relevant columns
@@ -1253,7 +1276,7 @@ nymphalburden$site = factor(nymphalburden$site,
 
 ```
 
-now do some graphs
+Graphs of mammal burdens
 ```{r}
 ggplot(larvalburden, aes( x= collectDate, y = larvaeYN))+
   geom_point()+
@@ -1295,7 +1318,7 @@ ggplot(Larvalburden, aes( x= Month, y = larvaeYN))+
   ytitletheme + xtitletheme +
   scale_color_manual(name="Life stage",values=cols) +
   theme(legend.position = 'bottom', legend.box = 'horizontal')
-ggsave("propmammalburdens.pdf", dpi = 320)
+ggsave("MammalBurdenProportionsSite_v1.pdf", dpi = 320)
 
   
 
@@ -1306,7 +1329,7 @@ ggsave("propmammalburdens.pdf", dpi = 320)
 
 
 ```
-when did burdens first pop up
+When did burdens first pop up
 ```{r}
 
 as.integer(larvalburden$larvaeYN)
@@ -1380,24 +1403,24 @@ geom_segment(aes(x=8,xend=8,y=1,yend=2), size = .3, alpha = .5)+
 
 
 ## now do it by collection date
-
-Firstylarva<- larvalburden %>% 
-  mutate(Date = as.Date(collectDate)) %>% 
-  group_by(site) %>% 
-  filter(larvaeYN == 1) %>%
-  filter(moonth == min(Month)) %>%
-  #filter(Date == min(collectDate)) %>% 
-  #select(larvaeYN == 1)%>%
-  slice(1) %>% # takes the first occurrence if there is a tie
-  ungroup()
-
-Firstylarva$site = factor(Firstylarva$site, 
-                             levels = c("BART" ,"HARV", 
-                                        "UNDE" ,"TREE","STEI" ,
-                                        "BLAN" , "SCBI" ,"SERC",
-                                        "MLBS", "ORNL", "GRSM",
-                                        "TALL",
-                                       "OSBS"))
+# 
+# Firstylarva<- larvalburden %>% 
+#   mutate(Date = as.Date(collectDate)) %>% 
+#   group_by(site) %>% 
+#   filter(larvaeYN == 1) %>%
+#   filter(moonth == min(Month)) %>%
+#   #filter(Date == min(collectDate)) %>% 
+#   #select(larvaeYN == 1)%>%
+#   slice(1) %>% # takes the first occurrence if there is a tie
+#   ungroup()
+# 
+# Firstylarva$site = factor(Firstylarva$site, 
+#                              levels = c("BART" ,"HARV", 
+#                                         "UNDE" ,"TREE","STEI" ,
+#                                         "BLAN" , "SCBI" ,"SERC",
+#                                         "MLBS", "ORNL", "GRSM",
+#                                         "TALL",
+#                                        "OSBS"))
 
 firstnymph<- nymphalburden  %>% 
   mutate(moonth = Month) %>% 
@@ -1433,19 +1456,18 @@ ggplot(firstnymph, mapping = aes(x = moonth, y = site))+
    geom_point(aes(x=2, y=10), colour="#4682B4", size = 3) +
    geom_point(aes(x=2, y=3), colour="#4682B4", size = 3) +
    geom_segment(aes(x=2,xend=3,y=12,yend=12), size = .2, alpha = .3)+
-  geom_segment(aes(x=3,xend=4,y=8,yend=8), size = .2, alpha = .3)+
-   geom_segment(aes(x=1,xend=2,y=6,yend=6), size = .2, alpha = .3) +  
-  geom_segment(aes(x=1,xend=2,y=3,yend=3), size = .2, alpha = .3)+
-  geom_segment(aes(x=2,xend=3,y=2,yend=2), size = .2, alpha = .3)+
+  geom_segment(aes(x=3,xend=4,y=8,yend=8), size = .2, alpha = .5)+
+   geom_segment(aes(x=1,xend=2,y=6,yend=6), size = .2, alpha = .5) +  
+  geom_segment(aes(x=1,xend=2,y=3,yend=3), size = .2, alpha = .5)+
+  geom_segment(aes(x=2,xend=3,y=2,yend=2), size = .2, alpha = .5)+
   theme(axis.text.x = element_text(angle = 45, size = 8, vjust = 0.5))+
   ytitletheme + xtitletheme +
-  clean_background +
   labs(x = 'Collection Month', y = 'Site', title = 'First occurrence of tick burden on mammal')+
   ylim("TALL", "GRSM","ORNL", "MLBS",
        "SERC","SCBI" , "BLAN" , "STEI",
        "TREE", "UNDE" , "HARV",  "BART")+
  annotate(geom = "point", x = 3, y = 11, colour = "#46008B", size = 3.5) +
- #annotate(geom = "text", x = 3, y = 10.5, label = "overlap", hjust = "center")+
+ annotate(geom = "text", x = 3, y = 10.5, label = "overlap", hjust = "center")+
  annotate(geom = "point", x = 2, y = 10, colour = "#46008B", size = 3.5) +
  #annotate(geom = "text", x = 2, y = 9.5, label = "overlap", hjust = "center")+
  annotate(geom = "point", x = 4, y = 9, colour = "#46008B", size = 3.5) +
@@ -1456,15 +1478,69 @@ ggplot(firstnymph, mapping = aes(x = moonth, y = site))+
  #annotate(geom = "text", x = 3, y = 4.5, label = "overlap", hjust = "center")+
  annotate(geom = "point", x = 2, y = 4, colour = "#46008B", size = 3.5) +
  #annotate(geom = "text", x = 2, y = 4.5, label = "overlap", hjust = "center")+
- annotate(geom = "point", x = 1, y = 1, colour = "#46008B", size = 3.5) 
- #annotate(geom = "text", x = 1, y = 1.5, label = "overlap", hjust = "center")
+ annotate(geom = "point", x = 1, y = 1, colour = "#46008B", size = 3.5) +
+ #annotate(geom = "text", x = 1, y = 1.5, label = "overlap", hjust = "center")+
+theme(plot.background = element_rect("white"),
+        panel.background = element_rect("white"),
+        panel.grid = element_line("gray80"), #altered
+        axis.line = element_line("gray25"),
+        axis.text = element_text(size = 12, color = "gray25"),
+        axis.title = element_text(color = "gray25"),
+        legend.text = element_text(size = 12),
+        legend.key = element_rect("white"))
+ggsave("MammalBurdenFirstOccurenceSite_v1.pdf", dpi = 320)
 
 
   
 ```
 
-regional mammal burdens
+Regional mammal burdens
+
 ```{r}
+
+## seems like mamsTrap_captures_N_col_E and mamsTrap_captures_L_col_E are the relevant sites, but I need to give them new names cause these are ridiculously long
+
+larvalburden <- mamsTrap_captures_L_col_E
+
+larvalburden$collectDate <- as.factor(larvalburden$collectDate)
+larvalburden$plotID <- unlist(larvalburden$plotID)
+larvalburden$collectDate <- as.character(larvalburden$collectDate)
+larvalburden$Year <- substr(larvalburden$collectDate, 1, nchar(larvalburden$collectDate)-6)
+#head(Iscap)
+
+larvalburden$Month <- substr(larvalburden$collectDate, 6, nchar(larvalburden$collectDate)-3)
+larvalburden$Weeks <- substr(larvalburden$collectDate, 6, nchar(larvalburden$collectDate))
+
+
+## nymphs
+nymphalburden <- mamsTrap_captures_N_col_E
+
+nymphalburden$collectDate <- as.factor(nymphalburden$collectDate)
+nymphalburden$plotID <- unlist(nymphalburden$plotID)
+nymphalburden$collectDate <- as.character(nymphalburden$collectDate)
+nymphalburden$Year <- substr(nymphalburden$collectDate, 1, nchar(nymphalburden$collectDate)-6)
+
+
+nymphalburden$Month <- substr(nymphalburden$collectDate, 6, nchar(nymphalburden$collectDate)-3)
+nymphalburden$Weeks <- substr(nymphalburden$collectDate, 6, nchar(nymphalburden$collectDate))
+
+# set factors
+larvalburden$site = factor(larvalburden$site, 
+                             levels = c("BART" ,"HARV", 
+                                        "UNDE" ,"TREE","STEI" ,
+                                        "BLAN" , "SCBI" ,"SERC",
+                                        "MLBS", "ORNL", "GRSM",
+                                        "TALL",
+                                        "OSBS"))
+
+nymphalburden$site = factor(nymphalburden$site, 
+                             levels = c("BART" ,"HARV", 
+                                        "UNDE" ,"TREE","STEI" ,
+                                        "BLAN" , "SCBI" ,"SERC",
+                                        "MLBS", "ORNL", "GRSM",
+                                        "TALL",
+                                       "OSBS"))
+
 northeast <- larvalburden[which(larvalburden$site == 'BART' | larvalburden$site == 'HARV'),]
   
   NE <- northeast   %>%
@@ -1472,11 +1548,11 @@ northeast <- larvalburden[which(larvalburden$site == 'BART' | larvalburden$site 
     summarise(prop = mean(larvaeYN), .groups = 'drop')
   
   ggplot(NE, aes( x= Month, y = prop))+
-  geom_jitter(color = '#4682B4', alpha = .8)+
+  geom_bar(stat = 'identity',fill = '#4682B4', alpha = .8)+
   facet_wrap(~site)+
   theme(strip.text = element_text(size=5))+
   clean_background+
-  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months')
+  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months', title = 'Northeast')
 
 
    
@@ -1489,11 +1565,11 @@ northeast <- larvalburden[which(larvalburden$site == 'BART' | larvalburden$site 
   
   
   ggplot(MW, aes( x= Month, y = prop))+
-  geom_jitter(color = '#4682B4', alpha = .8)+
+  geom_bar(stat = 'identity',fill = '#4682B4', alpha = .8)+
   facet_wrap(~site)+
   theme(strip.text = element_text(size=5))+
   clean_background+
-  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months')
+  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months', title = 'Midwest')
 
   
   
@@ -1504,11 +1580,11 @@ northeast <- larvalburden[which(larvalburden$site == 'BART' | larvalburden$site 
     summarise(prop = mean(larvaeYN), .groups = 'drop')
   
   ggplot(MA, aes( x= Month, y = prop))+
-  geom_jitter(color = '#4682B4', alpha = .8)+
+  geom_bar(stat = 'identity',fill = '#4682B4', alpha = .8)+
   facet_wrap(~site)+
   theme(strip.text = element_text(size=5))+
   clean_background+
-  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months')
+  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months', title = 'Mid Atlantic')
   
   
   
@@ -1520,11 +1596,11 @@ appalachians <- larvalburden[which(larvalburden$site == 'MLBS' | larvalburden$si
 
   
   ggplot(AP, aes( x= Month, y = prop))+
-  geom_jitter(color = '#4682B4', alpha = .8)+
+  geom_bar(stat = 'identity',fill = '#4682B4', alpha = .8)+
   facet_wrap(~site)+
   theme(strip.text = element_text(size=5))+
   clean_background+
-  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months')
+  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months', title = 'Appalachians')
 
      
 ozse <- larvalburden[which(larvalburden$site == 'TALL' | larvalburden$site == 'OSBS'),]
@@ -1534,11 +1610,11 @@ ozse <- larvalburden[which(larvalburden$site == 'TALL' | larvalburden$site == 'O
     summarise(prop = mean(larvaeYN), .groups = 'drop')
   
   ggplot(OZSE, aes( x= Month, y = prop))+
-  geom_jitter(color = '#4682B4', alpha = .8)+
+  geom_bar(stat = 'identity',fill = '#4682B4', alpha = .8)+
   facet_wrap(~site)+
   theme(strip.text = element_text(size=5))+
   clean_background+
-  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months')
+  labs(y = 'Proportion of mammals with tick burdens', x = 'Collection Months', title = 'Ozarks')
 
   
 ```
@@ -1547,7 +1623,7 @@ ozse <- larvalburden[which(larvalburden$site == 'TALL' | larvalburden$site == 'O
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *version 4*
 
-total ticks and regions
+Total ticks and regions
 
 ```{r}
 
@@ -1704,7 +1780,7 @@ ggsave("geomaregionweeks.pdf", dpi = 320)
 
 
 
-larval by week
+Larval by week
 ```{r}
 #library(tidyverse)
 #larve
@@ -1803,7 +1879,7 @@ ggplot(monthlycounts, aes(y = sum_countsL, x = Month, group = site, color = site
 ```
 
 
-nymphs by week 
+Nymphs by week 
 
 ```{r completed geom area}
 #Nymphs
@@ -1866,7 +1942,7 @@ ggplot(collected, aes(y = sum_counts, x = Weeks, group = site, color = site))+
   annotate(geom = "text", x = 44, y = 80, label = "July", size = 3.5)+
   annotate(geom = "text", x = 65, y = 80, label = "August", size = 3.5)+
   annotate(geom = "text", x = 83, y = 80, label = "September", size = 3.5)
-ggsave("geomareanymphweeks.pdf", dpi = 320)
+ggsave("NymphalTickPhenologySite_v1.pdf", dpi = 320)
 
   
 
@@ -2002,7 +2078,7 @@ aes(y = individualCount, x = Month))+
   labs(y = 'Total ticks per sampling \n (2016 - 2019)', x = 'Collection Month') +
   theme(axis.title.y =  element_text(face = 'bold',size = 12, color = 'black')) +
   theme(axis.title.x =  element_text(face = 'bold',size = 12, color = 'black'))
-ggsave("geomnymphfinal.pdf", dpi = 320)
+ggsave("NymphalTickPhenologySelectedSites_v1.pdf", dpi = 320)
 
 
   #scale_y_continuous(expand = c(0, 0), limits = c(0, max(individualCount))) 
@@ -2094,7 +2170,6 @@ ggplot(collected, aes(y = sum_counts, x = Weeks, group = site, color = site))+
   annotate(geom = "text", x = 44, y = 80, label = "July", size = 3.5)+
   annotate(geom = "text", x = 65, y = 80, label = "August", size = 3.5)+
   annotate(geom = "text", x = 83, y = 80, label = "September", size = 3.5)
-ggsave("geomareanymphweeks.pdf", dpi = 320)
 
   
 
@@ -2148,8 +2223,8 @@ aes(y = sum_counts, x = Month))+
   labs(fill = "Site")+
   theme(axis.title.y =  element_text(face = 'bold',size = 12)) +
   theme(axis.title.x =  element_text(face = 'bold',size = 12)) +
-  geom_vline(xintercept = 04)
-  #theme(legend.position = 'bottom', legend.box = 'horizontal')
+  geom_vline(xintercept = 04)+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')
 
 
 ```
@@ -2194,7 +2269,7 @@ aes(y = sum_counts, x = Month))+
 ```
 
 
-incidence
+Incidence
 
 ```{r}
 # extract Year
@@ -2232,6 +2307,7 @@ ggplot(incidence_2, aes(y = incidence, x = Month))+
 
 
 geom_bar plotID
+
 ```{r}
 #Nymphs
 I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
@@ -2386,25 +2462,10 @@ ggsave("bbincidenceboxplotwithtable.pdf", dpi = 320)
   # annotate(geom = "text", x = .9, y = 3.35, label = "SOUTHEAST", size = 3.5, color = 'red')
   # 
 
-ggplot(tick_path_Bb_col_E, aes(incidence))+
-         geom_histogram(,fill = 'gray91', na.rm = TRUE)+
-    scale_x_discrete(limits = rev(levels(tick_path_Bb_col_E$plotID)))+
-  clean_background + 
-  coord_flip()
-
 
 #unique(tick_path_Bb_col_E$site)
 ```
 
-
-```{r}
-
-tick_path_Bb_col_E$countt <-aggregate(individualCount ~ plotID, data=I_scap_N, FUN=sum)
-
-unique(totalticks$site)
-ggplot(totalticks, aes(y = individualCount, x = site))+
-  geom_point()
-```
 
 
 
@@ -2449,7 +2510,7 @@ View(I_scap_N_2016)
 
 #unique(I_scap_N_2016$site)
 # point and line
-N2016 <- ggplot(data = I_scap_N_2016,
+ggplot(data = I_scap_N_2016,
 aes(y = individualCount, x = as.Date(collectDate)))+
   facet_wrap(~site, scale = 'free_y',ncol = 2)+
   theme(strip.background = element_rect(fill = 'gray95'))+
@@ -2463,7 +2524,8 @@ aes(y = individualCount, x = as.Date(collectDate)))+
   ytitletheme +
   xtitletheme +
   labs(x = "Collection Date (2016)",y = 'Questing tick counts')
-  
+  ggsave("NymphalTickPhenologySite2019_v1.pdf", dpi = 320)
+
 N2016  
 ggsave("geomnymph2016.pdf", dpi = 320)
 
@@ -2551,7 +2613,7 @@ aes(y = individualCount, x = as.Date(collectDate)))+
   xtitletheme +
   labs(x = "Collection Date (2018)",y = 'Questing tick counts')
 N2018
-ggsave("geomnymph2018.pdf", dpi = 320)
+ggsave("NymphalTickPhenologySite2018_v1.pdf", dpi = 320)
 
 
 # 2019
@@ -2596,7 +2658,7 @@ aes(y = individualCount, x = as.Date(collectDate)))+
   xtitletheme +
   labs(x = "Collection Date (2019)",y = 'Questing tick counts')
 N2019
-ggsave("geomnymph2019.pdf", dpi = 320)
+ggsave("NymphalTickPhenologySite2019_v1.pdf", dpi = 320)
 
 ```
 
@@ -2656,9 +2718,9 @@ aes(y = incidence, x = as.Date(Date)))+
   ytitletheme +
   xtitletheme +
   labs(x = "Collection Date (2016)",y = 'B. burgdorferi incidence')
-P2016  
+#P2016  
 
-ggsave("geombbincidence2016.pdf", dpi = 320)
+#ggsave("geombbincidence2016.pdf", dpi = 320)
 
 ## 2017
 
@@ -2696,8 +2758,8 @@ aes(y = incidence, x = as.Date(Date)))+
   ytitletheme +
   xtitletheme +
   labs(x = "Collection Date (2017)",y = 'B. burgdorferi incidence')
-P2017
-ggsave("geombbincidence2017.pdf", dpi = 320)
+#P2017
+#ggsave("geombbincidence2017.pdf", dpi = 320)
 
 
 ## 2018
@@ -2736,23 +2798,12 @@ aes(y = incidence, x = as.Date(Date)))+
   ytitletheme +
   xtitletheme +
   labs(x = "Collection Date (2018)",y = 'B. burgdorferi incidence')
-P2018
-ggsave("geombbincidence2018.pdf", dpi = 320)
+#P2018
+#ggsave("geombbincidence2018.pdf", dpi = 320)
 
 
 
 ```
-
-
-
-```{r}
-View(mamsTrap_col_E$capture)
-
-ggplot(mamsTrap_col_E, aes(y = capture, x = as.Date(collectDate)))+
-  geom_point()
-```
-
-
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3252,6 +3303,7 @@ finalnymphquesting <- annotate_figure(nymphsperyear,
                 left = text_grob("Total ticks per sampling", rot = 90, face = 'bold'))
 
 finalnymphquesting
+ggsave("NymphalTickPhenologySite2016to2019_v1.pdf", dpi = 320)
 
 # save image to your computer
 ggsave("finalnymphquesting.pdf", dpi = 320)

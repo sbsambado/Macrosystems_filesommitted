@@ -94,10 +94,192 @@ aes(y = individualCount, x = collectDate))+
   theme(strip.text.x = element_text(face = 'bold'))+
   geom_point() +
   #geom_smooth(se = FALSE, color = 'red')+
-  #stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), alpha = .3)+
+  stat_smooth(geom='ribbon', aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)), alpha = .3)+
   clean_background +
   theme(axis.text.x = element_text(angle = 45, size = 2, vjust = 0.5))+
   ytitletheme +
   xtitletheme 
+```
+
+```{r}
+tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)
+
+Tick_path <- tick_path[,c(4,5,7,8,9,14,18,20,23,24)]
+#head(tick_path, n=20)
+#unique(tick_path$testPathogenName)
+
+# select for LD spirochetes
+# tick_path_Bb <- tick_path[which(tick_path$testPathogenName == 'Borrelia burgdorferi' | tick_path$testPathogenName == 'Borrelia burgdorferi sensu lato' | tick_path$testPathogenName == 'Borrelia sp.'),]
+
+#nrow(tick_path_Bb)
+
+
+#tick_path_Bb_pos <- tick_path_Bb[which(tick_path_Bb$testResult == 'Positive'),]
+#nrow(tick_path_Bb_pos)
+#unique(tick_path_Bb_pos$siteID)
+
+unique(Tick_path$testPathogenName)
+sum(Tick_path$individualCount)
+Tick_path$incidence <- ifelse(Tick_path$testResult == 'Positive', 1, 0)
+Tick_path$collectDate <- as.character(Tick_path$collectDate)
+Tick_path$Date <- substr(Tick_path$collectDate, 1, nchar(Tick_path$collectDate)-7)
+#head(Tick_path_Bb)
+#nrow(Tick_path_Bb)
+#View(Tick_path)
+Tick_path_col <- aggregate(incidence ~ plotID + Date + testPathogenName, data=Tick_path, FUN=mean)
+#head(Tick_path_Bb_col, n=20)
+#nrow(Tick_path_Bb_col)
+
+Tick_path_col$plotID <- as.character(Tick_path_col$plotID)
+Tick_path_col$site <- substr(Tick_path_col$plotID, 1, nchar(Tick_path_col$plotID)-4)
+#head(Tick_path_Bb_col)
+
+Tick_path_col <- Tick_path_col[which(Tick_path_col$testPathogenName != 'HardTick DNA Quality' & Tick_path_col$testPathogenName != 'Ixodes pacificus'),]
+
+unique(Tick_path_col$site)
+
+Tick_path_col$site = factor(Tick_path_col$site,
+                            levels = c("HARV","TREE",
+                            "SCBI","SERC","BLAN", 
+                            "KONZ","UKFS","KONA",
+                            "MLBS","ORNL", 
+                            "DELA","TALL" ,"LENO",
+                            "OSBS"))
+
+# Tick_path_Bb_col_E$site = factor(Tick_path_Bb_col_E$site, 
+#                             levels = c("BART" ,"HARV", 
+#                                         "UNDE" ,"TREE","STEI" ,
+#                                         "BLAN" , "SCBI" ,"SERC",
+#                                         "MLBS", "ORNL", "GRSM",
+#                                         "TALL",
+#                                        "OSBS"))
+# 
+# Tick_path_Bb_col_E$plotID = factor(Tick_path_Bb_col_E$plotID, 
+#                             levels = c("HARV_001",
+#                                        "HARV_002",
+#                                        "HARV_004",
+#                                        "HARV_006",
+#                                        "HARV_020" ,
+#                                        "HARV_022", 
+#                                        "HARV_026" ,
+#                                        "TREE_007",
+#                                        "TREE_015",
+#                                        "TREE_017",
+#                                        "TREE_019",
+#                                        "TREE_022",
+#                                        "BLAN_005",
+#                                        "BLAN_012",
+#                                        "SERC_001",
+#                                        "SERC_002",
+#                                        "SERC_005",
+#                                        "SERC_006",
+#                                        "SERC_012",
+#                                        "SERC_023",
+#                                        "SCBI_002",
+#                                        "SCBI_005",
+#                                        "SCBI_006",
+#                                        "SCBI_007",
+#                                        "SCBI_013",
+#                                        "SCBI_039",
+#                                        "ORNL_002",
+#                                        "ORNL_003",
+#                                        "ORNL_007",
+#                                        "ORNL_008",
+#                                        "ORNL_009",
+#                                        "ORNL_040")) 
+# 
+
+#Tick_path__col_E   <- subset(Tick_path_Bb_col_E, !is.na(plotID))                           
+                                    
+ #ggplot(as.data.frame(totalticks), aes(x = Site, y = individualCount))+
+  # geom_point()
+ 
+
+
+
+#d <- tableGrob(totalticks, rows = rownames(totalticks), cols = colnames(totalticks))
+#grid.arrange(d)
+#myt <- ttheme_default(
+         # Use hjust and x to left justify the text
+         # Alternate the row fill colours
+                 #core = list(fg_params=list(hjust = 1, x=1),
+                             #bg_params=list(fill=c("grey90", "grey88"))))
+#c <-grid.draw(tableGrob(format(totalticks, big.mark=","), theme=myt, rows=NULL))
+
+#tt <- ttheme_default(colhead=list(fg_params = list(parse=TRUE)))
+#tbl <- tableGrob(totalticks, rows=NULL, theme=tt)
+
+                                  
+                                       
+# remove NA                                     
+Tick_path_col <- subset(Tick_path_col, !is.na(testPathogenName))                           
+
+
+  ggplot(Tick_path_col, aes(y = incidence, x = site, group = testPathogenName, color = testPathogenName))+
+  geom_jitter(na.rm = TRUE, width = 1, alpha = .3)+
+    clean_background+
+    labs(y = 'Pathogen incidence rate', x = 'Site')+
+    titleytheme+ xtitletheme+ rotatexaxistheme+
+      theme(legend.position = 'bottom', legend.box = 'horizontal', 
+            legend.title = element_text(size = 6), legend.text = element_text(size = 5))
+#ggsave("PathogenIncidenceTicksSite_v2.pdf", dpi = 320)
+
+ Tick_path_col_no0 <- Tick_path_col[which(Tick_path_col$incidence > "0"),]
+ggplot(Tick_path_col_no0, aes(y = incidence, x = site, group = testPathogenName, color = testPathogenName))+
+  geom_jitter(na.rm = TRUE, width = .9, alpha = .3, size = 3)+
+    clean_background+
+    labs(y = 'Pathogen incidence rate', x = 'Site')+
+    titleytheme+ xtitletheme+ rotatexaxistheme+
+      theme(legend.position = 'bottom', legend.box = 'horizontal', 
+            legend.title = element_text(size = 6), legend.text = element_text(size = 5))
+ggsave("PathogenIncidenceTicksSite_v3.pdf", dpi = 320)
+ 
+
+# # remove ricketssia
+#   Tick_path_col_norick <- Tick_path_col[which(Tick_path_col$testPathogenName != 'Ehrlichia muris-like'),]
+# 
+# ggplot(Tick_path_col_norick, aes(y = incidence, x = site, group = testPathogenName, color = testPathogenName))+
+#   geom_jitter(na.rm = TRUE, width = 1, alpha = .3)+
+#     clean_background+
+#     labs(y = 'Pathogen incidence rate', x = 'Site')+
+#     titleytheme+ xtitletheme+ rotatexaxistheme+
+#       theme(legend.position = 'bottom', legend.box = 'horizontal', 
+#             legend.title = element_text(size = 6), legend.text = element_text(size = 5))
+# 
+# ggarrange(x,tbl,
+#           widths = c(1, .3),
+#           heights = c(1,.5,.3)) 
+#ggsave("BbIncidenceTicksPlotID_v1.pdf", dpi = 320)
+
+```
+
+
+lets see the difference between 
+```{r}
+unique(Tick_path_col$testPathogenName)
+  Tick_path_col_bmbb <- Tick_path_col[which(Tick_path_col$testPathogenName == 'Borrelia miyamotoi' |
+                                        Tick_path_col$testPathogenName == 'Borrelia burgdorferi sensu lato'),]
+Tick_path_col_bmbb <- Tick_path_col_bmbb[which(Tick_path_col_bmbb$incidence > "0"),]
+
+# group by Pathogen type
+
+Tick_path_col_bmbb$type <- ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia miyamotoi', 1, 0)
+Tick_path_col_bmbb$type <- ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia burgdorferi sensu lato', 1, 0)
+
+Tick_path_col_bmbb$type <- ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia miyamotoi', 1, 
+                                  ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia burgdorferi sensu lato', 2, 0))
+sumtype, == 3
+
+diff<- Tick_path_col_bmbb %>%
+  group_by(plotID, year) %>% 
+  summarise(sum_types = sum(type), .groups = 'drop')
+  
+  filter(type > 2) 
+
+%>%
+  #filter(Date == min(collectDate)) %>% 
+  #select(larvaeYN == 1)%>%
+  slice(1) %>% # takes the first occurrence if there is a tie
+  ungroup()
 ```
 

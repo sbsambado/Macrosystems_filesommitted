@@ -1,0 +1,67 @@
+---
+title: "ODEs_v1"
+author: "sbsambado"
+date: "10/13/2020"
+output: html_document
+---
+
+```{r}
+library(deSolve)
+
+
+```
+
+
+
+```{r}
+
+
+ macro<- function(t, x, params) {
+  L = x[1]
+  N = x[2]
+
+  
+  P = params[1]
+  b = params[3]
+  e = params[4]
+
+  e = exp(-b)
+  dLdt = (e*L) - u*L 
+  dNdt = (e*N) - u*N
+
+  return(list(c(dLdt, dNdt)))
+ }
+
+# tick
+#V = S + X
+L0 = 10 # susceptible tick
+N0 = 10 # infected tick
+
+# host
+initial_values = c(L = L0, N = N0)
+
+# decent params, .2, .9, 300, 3000, .01, .01, .2, .7, .9
+# .2, .75, 1200, 100, .01, .001, .005, .05, .51 for 1000, 125 and 1000 114
+  P = 1000
+  b = .002
+
+
+parameters = c(P, b, u)
+times = seq(0, 600000, length.out = 10000)
+results = lsoda(initial_values, times, macro, parameters)
+head(results)
+Lcol = 'green'
+Ncol = 'red'
+Hcol = 'blue'
+ecol = 'orange'
+plot(x = results[, "time"], y = results[, "L"], type = 'l', col=Lcol, las = 3, lwd=2, xlab = 'Time', ylab = 'Number of Individuals',
+     ,main = "Host - Tick Metapopulation Model")
+lines(x = results[, "time"], y = results[, "N"], col = Ncol, lwd = 1)
+lines(x = results[, "time"], y = results[, "H"], col = Hcol, lwd = 2)
+#lines(x = results[, "time"], y = results[, "e"], col = ecol, lwd = 2)
+#lines(x = results[, "time"], y = results[, "V"], col = 'black', lwd = 2)
+#lines(x = results[, "time"], y = results[, "N"], col = 'grey', lwd = 2)
+#legend('topright', legend = c('Tick, Uninfected (S)', 'Tick, Infected (X)', 'Host Uninfected (T)', 'Host Infected (Y)','Tick pop', 'Host pop'), col = c(Scol, Xcol, Tcol, Ycol, 'black', 'grey'),
+ #      lwd = 2,cex = 0.9)
+```
+

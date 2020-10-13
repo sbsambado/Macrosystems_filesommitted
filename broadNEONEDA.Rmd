@@ -261,6 +261,14 @@ unique(Tick_path_col$testPathogenName)
                                         Tick_path_col$testPathogenName == 'Borrelia burgdorferi sensu lato'),]
 Tick_path_col_bmbb <- Tick_path_col_bmbb[which(Tick_path_col_bmbb$incidence > "0"),]
 
+ggplot(Tick_path_col_bmbb, aes(y = incidence, x = site, group = testPathogenName, color = testPathogenName))+
+  geom_jitter(na.rm = TRUE, width = .4, alpha = .3)+
+    clean_background+
+    labs(y = 'Pathogen incidence rate', x = 'Site')+
+    titleytheme+ xtitletheme+ rotatexaxistheme+
+      theme(legend.position = 'bottom', legend.box = 'horizontal',
+            legend.title = element_text(size = 6), legend.text = element_text(size = 5))
+
 # group by Pathogen type
 
 Tick_path_col_bmbb$type <- ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia miyamotoi', 1, 0)
@@ -268,18 +276,182 @@ Tick_path_col_bmbb$type <- ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrel
 
 Tick_path_col_bmbb$type <- ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia miyamotoi', 1, 
                                   ifelse(Tick_path_col_bmbb$testPathogenName == 'Borrelia burgdorferi sensu lato', 2, 0))
-sumtype, == 3
 
-diff<- Tick_path_col_bmbb %>%
-  group_by(plotID, year) %>% 
-  summarise(sum_types = sum(type), .groups = 'drop')
+
+compare <- Tick_path_col_bmbb %>%
+  group_by(plotID, Date) %>%
+    summarise(sum_ = sum(type), .groups = 'drop') %>%
+  filter(sum_ > 2)
+
+unique(compare$plotID)
+# sites with both bb and bm sampled on Date
+#"BLAN_005" "HARV_002" "HARV_004" "SCBI_013" "SERC_001" "SERC_002" "SERC_005" "SERC_012" "SERC_023" "TREE_015" "TREE_017" "TREE_019" #"TREE_022"
+
+
+both <- Tick_path_col_bmbb[which(Tick_path_col_bmbb$plotID == "BLAN_005"|
+                                   Tick_path_col_bmbb$plotID == "HARV_002" |
+                                   Tick_path_col_bmbb$plotID == "HARV_004" |
+                                   Tick_path_col_bmbb$plotID == "SCBI_013" |
+                                   Tick_path_col_bmbb$plotID == "SERC_001" |
+                                   Tick_path_col_bmbb$plotID == "SERC_002" |
+                                   Tick_path_col_bmbb$plotID == "SERC_005" |
+                                   Tick_path_col_bmbb$plotID == "SERC_012" |
+                                   Tick_path_col_bmbb$plotID == "SERC_023" |
+                                   Tick_path_col_bmbb$plotID == "TREE_015" |
+                                   Tick_path_col_bmbb$plotID == "TREE_017" |
+                                   Tick_path_col_bmbb$plotID == "TREE_019" |
+                                   Tick_path_col_bmbb$plotID == "TREE_022"),]
+
+both %>%
+  group_by(Date, testPathogenName)
+
+data_wide <- spread(both, testPathogenName, incidence)
+
+
+   excel <-data_wide %>%
+  group_by(plotID, Date) 
   
-  filter(type > 2) 
+install.packages('writexl')
+library(writexl)
+write_xlsx(excel, " ~Desktop\\excel.xlsx")
 
-%>%
-  #filter(Date == min(collectDate)) %>% 
-  #select(larvaeYN == 1)%>%
-  slice(1) %>% # takes the first occurrence if there is a tie
-  ungroup()
+```
+
+
+neon data
+```{r}
+library(readr)
+neon_diff<- read.csv("neon_difference_bbbm.csv")
+
+neon_diff$region[neon_diff$site == "HARV"] <- "northeast"
+neon_diff$region[neon_diff$site == "BLAN"] <- "northeast"
+neon_diff$region[neon_diff$site == "SCBI"] <- "northeast"
+neon_diff$region[neon_diff$site == "SERC"] <- "northeast" 
+neon_diff$region[neon_diff$site == "TREE"] <- "midwest"
+
+#unique(neon_diff$site)
+ggplot(neon_diff, aes(x = site, y = 100*(diff)))+
+  geom_jitter()+
+  clean_background + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Difference in prevalence (%)", title = "Difference between Bb and Bm prevalence by site",
+       color = "Life Stage")
+#ggsave("PathogenDifferenceRegionPublished_v1.pdf", dpi = 320)
+
+ggplot(neon_diff, aes(x = plotID, y = 100*(diff)))+
+  geom_jitter()+
+  clean_background + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Difference in prevalence (%)", title = "Difference between Bb and Bm prevalence by site",
+       color = "Life Stage")+
+  rotatexaxistheme
+
+ggplot(neon_diff, aes(x = region, y = 100*(diff)))+
+  geom_jitter(size = 3, width = .1)+
+  clean_background + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Difference in prevalence (%)", title = "Difference between Bb and Bm prevalence by site",
+       color = "Life Stage")+
+  xlim("midatlantic","midwest", "northeast")
+#
+
+```
+
+
+published data
+```{r}
+published_diff <- read.csv("clean_published_difference_bbbm.csv")
+
+ggplot(published_diff, aes(x = state, y = diff, group = lifestage, color = lifestage))+
+         geom_point()+
+         rotatexaxistheme
+
+#coeff<- 1
+
+# difference between lifestages across regions
+ggplot(published_diff, aes(x = region, y = diff), group = lifestage, color = lifestage)+
+         #geom_point(size = 3, alpha = .5)+
+  geom_jitter(data = neon_diff, aes(x = region, y = 100*(diff)), color = 'blue', size = 3)+
+        geom_jitter(width = .29,alpha = 0.5, aes(size = tot_nymph, color = lifestage))+
+        scale_size(range = c(3, 10),name = 'Total Ticks Sampled',
+             breaks = c(100,500,1000))+
+  xlim("westcoast", "midwest", "northeast")+
+  clean_background + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Difference in prevalence (%)", title = "Difference between Bb and Bm prevalence by site \n(Published Data)",
+       color = "Life Stage")+
+  geom_point(x = .5, y = 85, color = 'blue', size = 3, alpha = .3)+
+  annotate(geom = "text", x = .79, y = 85, label = "Neon Data", size = 4, hjust = "center")+
+  geom_hline(yintercept = 10, alpha = .3 ) +
+  geom_hline(yintercept = 50, alpha = .3 ) 
+ggsave("PathogenDifferenceRegionPublished_v1.pdf", dpi = 320)
+
+```
+
+
+
+```{r}
+# difference between lifestages across states
+ggplot(published_diff, aes(x = state, y = diff), group = lifestage, color = lifestage)+
+         #geom_point(size = 3, alpha = .5)+
+        geom_jitter(width = .29,alpha = 0.5, aes(size = tot_nymph, color = lifestage))+
+        scale_size(range = c(3, 10),name = 'Total Ticks Sampled',
+             breaks = c(100,500,1000))+
+    #geom_jitter(stat = 'identity', data = published_diff, aes(x = region, y = bm_prev), color = 'red',size = 3, alpha = .5)+
+    #geom_jitter(stat = 'identity',data = published_diff, aes(x = region, y = bb_prev), color = 'blue',size = 3, alpha = .5)+
+         #rotatexaxistheme+
+  #scale_y_continuous(name = "Difference in prevalence",
+                     #sec.axis = sec_axis(~.*coeff, name = "Prevalence"))+
+  #xlim("westcoast", "midwest", "northeast")+
+  clean_background + xtitletheme + ytitletheme +
+  labs(x = "State", y = "Difference in prevalence (%)", title = "Difference between Bb and Bm prevalence by state",
+       color = "Life Stage")
+
+
+
+# prevalence difference between bb and bm 
+ggplot(published_diff, aes(x = region))+
+    geom_jitter(stat = 'identity', data = published_diff, aes(x = region, y = bm_prev, color = 'B. miyamotoi'),size = 3, alpha = .5)+
+    geom_jitter(stat = 'identity',data = published_diff, aes(x = region, y = bb_prev, color = 'B. burgdorferi'),size = 3, alpha = .5)+
+         #rotatexaxistheme+
+  #scale_y_continuous(name = "Difference in prevalence",
+                     #sec.axis = sec_axis(~.*coeff, name = "Prevalence"))+
+  xlim("westcoast", "midwest", "northeast")+
+  clean_background + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Infection Prevalence (%)", title = "Bb and Bm prevalence by site",
+       color = "Pathogen Type")
+
+
+```
+
+
+
+```{r}
+
+# two y axis
+# coeff <- 
+  #scale_y_continuous(name = "Difference in prevalence",
+                     #sec.axis = sec_axis(~.*coeff, name = "Prevalence"))+
+# unique(Tick_path_col_bmbb$plotID)
+# 
+# library(janitor)
+# bm <- Tick_path_col_bmbb %>%
+#   group_by(plotID, testPathogenName) %>%
+#   filter(testPathogenName == 'Borrelia miyamotoi')
+# 
+# unique(bm$plotID)
+# unique(bb$plotID)
+# 
+# bb <- Tick_path_col_bmbb %>%
+#   group_by(plotID, testPathogenName) %>%
+#   filter(testPathogenName == 'Borrelia burgdorferi sensu lato')
+# 
+# compare_df_cols(bm, bb)
+# 
+# install.packages('diffdf')
+# library(diffdf)
+# 
+# diffdf(bm, bb)
+# 
+# install.packages('arsenal')
+# library(arsenal)
+# 
+# summary(comparedf(bm, bb, by = 'plotID'))
 ```
 

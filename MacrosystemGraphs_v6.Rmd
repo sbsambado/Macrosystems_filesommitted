@@ -696,19 +696,19 @@ tick_path_Bb_col_E   <- subset(tick_path_Bb_col_E, !is.na(plotID))
 # remove NA                                     
 #tick_path_Bb_col_E   <- subset(tick_path_Bb_col_E, !is.na(plotID))                           
 
-x <- ggplot(tick_path_Bb_col_E, aes(x = incidence, y = plotID))+
+x <- ggplot(tick_path_Bb_col_E, aes(y = incidence, x = plotID))+
   geom_boxplot(fill = 'gray91', na.rm = TRUE)+
-  scale_y_discrete(limits = rev(levels(tick_path_Bb_col_E$plotID)))+
+  scale_x_discrete(limits = (levels(tick_path_Bb_col_E$plotID)))+
   clean_background +
   theme(axis.text.y = element_text(size = 5.7, vjust = 0.9))+
   titleytheme +
   geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
   labs(x = "B. burgdorferi incidence", y = "plotID", title = 'B. burgdorferi incidence in questing ticks') +
-  scale_x_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
-  xtitletheme 
-
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
+  xtitletheme +
+  rotatexaxistheme
+ggsave("BBincidenceSiteBoxplot_v1.pdf", dpi = 320)
   #annotation_custom(tbl, xmin = .75, ymax = 11)
-
 #ggsave("bbincidenceboxplotwithtable.pdf", dpi = 320)
 
 
@@ -765,6 +765,7 @@ tick_path_Bb_col$site <- substr(tick_path_Bb_col$plotID, 1, nchar(tick_path_Bb_c
 #tick_path_Bb_col_E <- tick_path_Bb_col[which(tick_path_Bb_col$site != 'DELA' & tick_path_Bb_col$site != 'KONA' & tick_path_Bb_col$site != 'KONZ' & tick_path_Bb_col$site != 'LENO' & tick_path_Bb_col$site != 'UKFS'),]
 
 tick_path_Bb_col   <- subset(tick_path_Bb_col, !is.na(plotID))   
+
 
 ggplot(tick_path_Bb_col, aes(x = incidence, y = plotID))+
   geom_boxplot(fill = 'gray91', na.rm = TRUE)+

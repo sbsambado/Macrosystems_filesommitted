@@ -489,7 +489,9 @@ ggplot(monthtotticks, aes(x = Month, y = freq))+
 ggsave("TickSamplingFrequencyMonth_v1.pdf", dpi = 320)
 
 
+sum(totticks$freq) # 1315
 
+unique(totticks$Year) # 2014 - 2019
 ```
 
 **2. Host density: Are there estimates of host density from particular sites and are there multiple estimates of host density within a year?**
@@ -695,7 +697,6 @@ tick_path_Bb_col_E   <- subset(tick_path_Bb_col_E, !is.na(plotID))
                                        
 # remove NA                                     
 #tick_path_Bb_col_E   <- subset(tick_path_Bb_col_E, !is.na(plotID))                           
-
 x <- ggplot(tick_path_Bb_col_E, aes(y = incidence, x = plotID))+
   geom_boxplot(fill = 'gray91', na.rm = TRUE)+
   scale_x_discrete(limits = (levels(tick_path_Bb_col_E$plotID)))+
@@ -703,7 +704,7 @@ x <- ggplot(tick_path_Bb_col_E, aes(y = incidence, x = plotID))+
   theme(axis.text.y = element_text(size = 5.7, vjust = 0.9))+
   titleytheme +
   geom_hline(yintercept = c(6.4, 12.4, 18.4, 25.4),color = 'red', size = .4, alpha = .3)+
-  labs(x = "B. burgdorferi incidence", y = "plotID", title = 'B. burgdorferi incidence in questing ticks') +
+  labs(y = "B. burgdorferi incidence", x = "plotID", title = 'B. burgdorferi incidence in questing ticks') +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 1.04)) +
   xtitletheme +
   rotatexaxistheme

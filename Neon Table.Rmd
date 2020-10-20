@@ -1,0 +1,576 @@
+---
+title: "Data Table"
+author: "sbsambado"
+date: "10/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+libraries
+```{r}
+library(dplyr)
+library(tidyverse)
+library(stats)
+library(base)
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+library(lubridate)
+library(caret)
+library(splines)
+library(cowplot)
+
+clean_background <- theme(plot.background = element_rect("white"),
+        panel.background = element_rect("white"),
+        panel.grid = element_line("white"),
+        axis.line = element_line("gray25"),
+        axis.text = element_text(size = 12, color = "gray25"),
+        axis.title = element_text(color = "gray25"),
+        legend.text = element_text(size = 12),
+        legend.key = element_rect("white"))
+
+multiplottitletheme <- theme(plot.title = element_text(face = 'bold', hjust = 0.04, size = 10,  color = 'black', vjust = -6))
+
+rotatexaxistheme <- theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5))
+
+ytitletheme <- theme(axis.title.y = element_text(face = 'bold', size = 12, vjust = 0.5))
+
+xtitletheme <- theme(axis.title.x = element_text(face = 'bold', size = 12, vjust = 0.5))
+
+
+```
+
+
+
+Original csv's are pulled from NEON.
+On my computer, these files are stored in a different R Project/Git Repository called 'Macrosystems'
+
+```{r pull original csvs}
+
+# ticks
+ticks <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_fielddata.csv", header=T)
+#head(ticks)
+#unique(ticks$siteID)
+#tail(ticks)
+#nrow(ticks)
+
+# tick taxa
+ticks_taxa <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_taxonomyProcessed.csv", header=T)
+#head(ticks_taxa)
+#nrow(ticks_taxa)
+
+# mammals
+mams <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10072/stackedFiles/mam_pertrapnight.csv", header=T)
+#head(mams)
+#nrow(mams)
+
+# tick pathogens
+tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)
+#head(tick_path)
+#nrow(tick_path)
+
+
+```
+
+
+clean up
+```{r}
+############## site selection #######
+#extract plotID
+ticks_taxa$site <- substr(ticks_taxa$plotID, 1, 4)
+
+# how many unique sites
+#unique(ticks_taxa$site)
+
+# select sites that use this criteria
+ticks_taxa_E <- ticks_taxa[which(ticks_taxa$site == 'BART' | ticks_taxa$site == 'HARV' | ticks_taxa$site == 'BLAN' | ticks_taxa$site == 'SCBI' | ticks_taxa$site == 'SERC' | ticks_taxa$site == 'OSBS' | ticks_taxa$site == 'STEI' | ticks_taxa$site == 'TREE' | ticks_taxa$site == 'UNDE' | ticks_taxa$site == 'GRSM' | ticks_taxa$site == 'MLBS' | ticks_taxa$site == 'ORNL' | ticks_taxa$site == 'TALL'),]
+
+View(unique(ticks_taxa_E$scientificName)) #12
+
+all_tick_col <- aggregate(individualCount ~ plotID + collectDate + site, data=ticks_taxa_E, FUN=sum)
+
+nrow(all_tick_col)
+sum(all_tick_col$individualCount) #46561
+
+
+
+```
+how many times sampled
+
+```{r}
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract site
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+#head(ticks_taxa)
+
+#plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+
+# select columns
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+
+Iscap <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva' | ticks_taxa2$sexOrAge == 'Nymph'),]
+                                
+Iscap<- Iscap[which(Iscap$scientificName == 'Ixodidae sp.' |
+                          Iscap$scientificName == 'Ixodes scapularis' |
+                            Iscap$scientificName == 'Ixodidae spp.' |
+                            Iscap$scientificName == 'Ixodida sp.' |
+                            Iscap$scientificName == 'Ixodes spp.' |
+                            Iscap$scientificName == 'Ixodes spp.' |
+                            Iscap$scientificName == 'Ixodes pacificus'), ]
+
+unique(Iscap$scientificName)
+sapply(Iscap, class)
+Iscap$collectDate <- as.character(Iscap$collectDate)
+
+Iscap$collectDate <- substr(Iscap$collectDate, 1, nchar(Iscap$collectDate)-7)
+#head(Iscap)
+
+Iscap$collectDate <- as.factor(Iscap$collectDate)
+Iscap$plotID <- unlist(Iscap$plotID)
+Iscap$collectDate <- as.character(Iscap$collectDate)
+Iscap$Year <- substr(Iscap$collectDate, 1, nchar(Iscap$collectDate)-6)
+#head(Iscap)
+
+
+Iscap$Month <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate)-3)
+Iscap$Weeks <- substr(Iscap$collectDate, 6, nchar(Iscap$collectDate))
+
+# filter out sites
+total <- Iscap[which(Iscap$site != 'DELA' & Iscap$site != 'KONA' & Iscap$site != 'KONZ' & Iscap$site != 'LENO' & Iscap$site != 'UKFS' & Iscap$site != 'JORN'  & Iscap$site != 'ABBY' & Iscap$site != 'OAES'),]
+
+sum(Iscap$individualCount)
+unique(total$site)
+unique(total$Month)
+
+totticks <- total   %>%
+  group_by(site, Year) %>%
+  summarise(freq = length(site)) 
+
+totticks$site = factor(totticks$site, 
+                             levels = c("BART" ,"HARV", 
+                                        "UNDE" ,"TREE","STEI" ,
+                                        "BLAN" , "SCBI" ,"SERC",
+                                        "MLBS", "ORNL", "GRSM",
+                                        "TALL",
+                                       "OSBS"))
+ggplot(totticks, aes(x = Year, y = freq))+
+  geom_histogram(stat = 'identity')+
+  facet_wrap(~site)+
+  rotatexaxistheme +
+  theme(strip.text = element_text(size=6, face = 'bold'),strip.background = element_rect(fill = 'gray95'))+
+  clean_background+
+  labs(y = 'Sampling frequency', x = 'Site', title = 'Tick sampling frequency by year')+
+  ytitletheme + xtitletheme
+ggsave("TickSamplingFrequencyYear_v1.pdf", dpi = 320)
+
+monthtotticks <- total   %>%
+  group_by(site, Month) %>%
+  summarise(freq = length(site)) 
+
+ggplot(monthtotticks, aes(x = Month, y = freq))+
+  geom_histogram(stat = 'identity')+
+  facet_wrap(~site)+
+  rotatexaxistheme +
+  theme(strip.text = element_text(size=6, face = 'bold'),strip.background = element_rect(fill = 'gray95'))+
+  clean_background+
+  labs(y = 'Sampling frequency', x = 'Site', title = 'Tick sampling frequency by month')+
+  ytitletheme + xtitletheme
+ggsave("TickSamplingFrequencyMonth_v1.pdf", dpi = 320)
+
+
+sum(totticks$freq) # 1315
+
+unique(totticks$Year) # 2014 - 2019
+
+View(unique(totticks$site))# 13 sites
+
+```
+
+
+```{r}
+lifestage_tick_col <- aggregate(individualCount ~ plotID  + site + sexOrAge, data=ticks_taxa_E, FUN=sum)
+
+a <- lifestage_tick_col %>%
+  group_by(sexOrAge, individualCount) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+
+adult <- a[which(a$sexOrAge == 'Adult'),]
+
+A <-adult %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #5	
+A
+
+
+larva <- a[which(a$sexOrAge == 'Larva'),]
+
+l <-larva %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #32775	
+l
+
+
+male <- a[which(a$sexOrAge == 'Male'),]
+
+m <-male %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #796
+m
+
+nymph <- a[which(a$sexOrAge == 'Nymph'),]
+
+n <-nymph %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #11457
+
+female <- a[which(a$sexOrAge == 'Female'),]
+
+f <-female %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #747
+
+
+```
+
+
+```{r}
+library(tidyverse)
+# select iscap
+ISCP <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Ixodes scapularis'),]
+#nrow(ISCP)
+
+iscap_col <- aggregate(individualCount ~ sexOrAge, data=ISCP, FUN=sum)
+sum(iscap_col$individualCount) #3333
+
+ggplot(iscap_col, aes(sexOrAge, individualCount), group = sexOrAge)+
+  geom_point()
+
+unique(iscap_col$sexOrAge)
+a <- iscap_col %>%
+  group_by(sexOrAge, individualCount) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+
+
+adult <- a[which(a$sexOrAge == 'Adult'),]
+
+
+A <-adult %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #5	
+A
+
+
+larva <- a[which(a$sexOrAge == 'Larva'),]
+
+l <-larva %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #32775	
+l
+
+
+male <- a[which(a$sexOrAge == 'Male'),]
+
+m <-male %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #796
+m
+
+nymph <- a[which(a$sexOrAge == 'Nymph'),]
+
+n <-nymph %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #11457
+
+female <- a[which(a$sexOrAge == 'Female'),]
+
+f <-female %>%
+  summarise(counts = sum(individualCount), .groups = 'drop') #747
+
+
+
+
+
+Ixodes <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Ixodes scapularis' | ticks_taxa_E$scientificName =='Ixodidae spp.' |
+                             ticks_taxa_E$scientificName =='Ixodidae sp.' | ticks_taxa_E$scientificName =='Ixodes sp.'),]
+#nrow(ISCP)
+
+ixodes_col <- aggregate(individualCount ~ plotID + collectDate + site, data=Ixodes, FUN=sum)
+sum(ixodes_col$individualCount) #25480
+
+```
+
+
+```{r}
+
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract certain plots
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+#head(ticks_taxa)
+
+#plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+
+# select columns
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+####View(head(ticks_taxa2, n=20))
+#nrow(ticks_taxa2)
+
+
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_N_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_N, FUN=sum)
+#head(I_scap_N_col, n=20)
+#nrow(I_scap_N_col)
+
+#View(I_scap_N)
+
+```
+
+# pathogen data
+
+```{r}
+#View(tick_path)
+tick_path <- tick_path[,c(4,5,7,8,9,14,18,20,23,24)]
+#head(tick_path, n=20)
+View(unique(tick_path$testPathogenName))
+unique(tick_path$siteID)
+
+length(tick_path$testResult) #119836
+unique(tick_path$testResult)
+
+# not bb
+tick_path_pos <- tick_path[which(tick_path$testResult == 'Positive'),] #9396
+
+length(tick_path_pos$testResult)
+
+unique(tick_path_pos$collectDate)
+# select for LD spirochetes
+tick_path_Bb <- tick_path[which(tick_path$testPathogenName == 'Borrelia burgdorferi' | tick_path$testPathogenName == 'Borrelia burgdorferi sensu lato' | tick_path$testPathogenName == 'Borrelia sp.'),]
+
+#nrow(tick_path_Bb)
+
+
+tick_path_Bb_pos <- tick_path_Bb[which(tick_path_Bb$testResult == 'Positive'),]
+#nrow(tick_path_Bb_pos)
+#unique(tick_path_Bb_pos$siteID)
+
+length(tick_path_Bb_pos$testResult)
+
+tick_path_Bb$incidence <- ifelse(tick_path_Bb$testResult == 'Positive', 1, 0)
+tick_path_Bb$collectDate <- as.character(tick_path_Bb$collectDate)
+tick_path_Bb$Date <- substr(tick_path_Bb$collectDate, 1, nchar(tick_path_Bb$collectDate)-7)
+#head(tick_path_Bb)
+#nrow(tick_path_Bb)
+
+tick_path_Bb_col <- aggregate(incidence ~ plotID + Date, data=tick_path_Bb, FUN=mean)
+#head(tick_path_Bb_col, n=20)
+#nrow(tick_path_Bb_col)
+
+tick_path_Bb_col$plotID <- as.character(tick_path_Bb_col$plotID)
+tick_path_Bb_col$site <- substr(tick_path_Bb_col$plotID, 1, nchar(tick_path_Bb_col$plotID)-4)
+#head(tick_path_Bb_col)
+
+tick_path_Bb_col_E <- tick_path_Bb_col[which(tick_path_Bb_col$site != 'DELA' & tick_path_Bb_col$site != 'KONA' & tick_path_Bb_col$site != 'KONZ' & tick_path_Bb_col$site != 'LENO' & tick_path_Bb_col$site != 'UKFS'),]
+```
+
+
+Mammals
+
+sampling frequency
+```{r}
+# select only relevant columns
+mamsTrap <- mams[,c(5,6,10,11,16,18,20,21,22,23,29,42,43,44)]
+#head(mamsTrap, n=20)
+
+# make relevant status column
+mamsTrap$statusCode <- substr(mamsTrap$trapStatus, 0, 1)
+#head(mamsTrap, n=50)
+
+# only assign values that make sense for status capture
+mamsTrap$capture <- ifelse(mamsTrap$statusCode == '5', 1, ifelse(mamsTrap$trapStatus == '4', 1, 0))
+#head(mamsTrap)
+
+# assign value to mammals that have attached ticks in new columns
+#unique(mamsTrap$nymphalTicksAttached)
+mamsTrap$larvaeYN <- ifelse(mamsTrap$larvalTicksAttached == 'Y', 1, 0)
+mamsTrap$nymphsYN <- ifelse(mamsTrap$nymphalTicksAttached == 'Y', 1, 0)
+mamsTrap$adultsYN <- ifelse(mamsTrap$adultTicksAttached == 'Y', 1, 0)
+#head(mamsTrap)
+
+# select only mammals that were captured
+mamsTrap_captures <- mamsTrap[which(mamsTrap$capture == 1),]
+#nrow(mamsTrap_captures)
+#head(mamsTrap_captures)
+
+
+# aggregate captured mammals by plot and collect date
+#mamsTrap_col <- aggregate(capture ~ plotID + collectDate, data=mamsTrap, FUN=mean)
+#nrow(mamsTrap_col)
+#head(mamsTrap_col)
+
+# make a new column for site
+mamsTrap_captures$site <- substr(mamsTrap_captures$plotID, 1, 4)
+#head(mamsTrap_col)
+#unique(mamsTrap_col$site)
+
+# select relevant sites
+mamsTrap_col_E <- mamsTrap_captures[which(mamsTrap_captures$site == 'HARV' | mamsTrap_captures$site == 'OSBS' | mamsTrap_captures$site == 'BART' | mamsTrap_captures$site == 'ORNL' | mamsTrap_captures$site == 'TALL' | mamsTrap_captures$site == 'SCBI' | mamsTrap_captures$site == 'UNDE' | mamsTrap_captures$site == 'SERC' | mamsTrap_captures$site == 'GRSM' | mamsTrap_captures$site == 'BLAN' | mamsTrap_captures$site == 'TREE' | mamsTrap_captures$site == 'STEI' | mamsTrap_captures$site == 'MLBS'),]
+#unique(mamsTrap_captures_E$site)
+#nrow(mamsTrap_col_E)
+
+# select only relevant
+ MamsTrap <- mamsTrap_col_E[,c(1,2,6,9,11,16,17,18,19,20)]
+
+# add columns
+MamsTrap$collectDate <- as.character(MamsTrap$collectDate)
+MamsTrap$Year <- substr(MamsTrap$collectDate, 1, nchar(MamsTrap$collectDate)-6)
+#head(Iscap)
+
+MamsTrap$Month <- substr(MamsTrap$collectDate, 6, nchar(MamsTrap$collectDate)-3)
+MamsTrap$Weeks <- substr(MamsTrap$collectDate, 6, nchar(MamsTrap$collectDate))
+
+MamsTrap$site = factor(MamsTrap$site, 
+                             levels = c("BART" ,"HARV", 
+                                        "UNDE" ,"TREE","STEI" ,
+                                        "BLAN" , "SCBI" ,"SERC",
+                                        "MLBS", "ORNL", "GRSM",
+                                        "TALL",
+                                       "OSBS"))
+# give easier name
+
+trapped <- MamsTrap
+length(unique(trapped$collectDate)) # 618 trapping efforts
+unique(trapped$Year) # 2013 - 2019
+unique(trapped$Month) # 3 -11
+length(unique(trapped$site)) #13
+
+
+str(trapped) # total trapping events 40,822 observations of capture = 1
+
+yeartrapsite <- trapped   %>%
+  group_by(site, Year) %>%
+  summarise(freq = length(site)) 
+
+ggplot(yeartrapsite, aes(x = Year, y = freq))+
+  geom_histogram(stat = 'identity')+
+  facet_wrap(~site)+
+  rotatexaxistheme +
+  theme(strip.text = element_text(size=6, face = 'bold'),strip.background = element_rect(fill = 'gray95'))+
+  clean_background+
+  labs(y = 'Sampling frequency', x = 'Site', title = 'Mammal sampling frequency by year')+
+  ytitletheme + xtitletheme
+
+monthtrapsite <- trapped   %>%
+  group_by(site, Month) %>%
+  summarise(freq = length(site)) 
+
+ggplot(monthtrapsite, aes(x = Month, y = freq))+
+  geom_histogram(stat = 'identity')+
+  facet_wrap(~site)+
+  rotatexaxistheme +
+  theme(strip.text = element_text(size=6, face = 'bold'),strip.background = element_rect(fill = 'gray95'))+
+  clean_background+
+  labs(y = 'Sampling frequency', x = 'Site', title = 'Mammal sampling frequency by month')+
+  ytitletheme + xtitletheme
+```
+
+
+
+```{r}
+### Mammals:
+#head(mams)
+#nrow(mams)
+#unique(mams$trapStatus)
+mamsTrap <- mams[,c(5,6,10,11,16,18,20,21,22,23,29,42,43,44)]
+#head(mamsTrap, n=20)
+mamsTrap$statusCode <- substr(mamsTrap$trapStatus, 0, 1)
+#head(mamsTrap, n=50)
+
+mamsTrap$capture <- ifelse(mamsTrap$statusCode == '5', 1, ifelse(mamsTrap$trapStatus == '4', 1, 0))
+#head(mamsTrap)
+
+
+#unique(mamsTrap$nymphalTicksAttached)
+mamsTrap$larvaeYN <- ifelse(mamsTrap$larvalTicksAttached == 'Y', 1, 0)
+mamsTrap$nymphsYN <- ifelse(mamsTrap$nymphalTicksAttached == 'Y', 1, 0)
+mamsTrap$adultsYN <- ifelse(mamsTrap$adultTicksAttached == 'Y', 1, 0)
+#head(mamsTrap)
+
+
+mamsTrap_captures <- mamsTrap[which(mamsTrap$capture == 1),]
+#nrow(mamsTrap_captures)
+#head(mamsTrap_captures)
+
+mamsTrap_col <- aggregate(capture ~ plotID + collectDate, data=mamsTrap, FUN=mean)
+#nrow(mamsTrap_col)
+#head(mamsTrap_col)
+
+
+mamsTrap_col$site <- substr(mamsTrap_col$plotID, 1, 4)
+#head(mamsTrap_col)
+#unique(mamsTrap_col$site)
+
+
+mamsTrap_col_E <- mamsTrap_col[which(mamsTrap_col$site == 'HARV' | mamsTrap_col$site == 'OSBS' | mamsTrap_col$site == 'BART' | mamsTrap_col$site == 'ORNL' | mamsTrap_col$site == 'TALL' | mamsTrap_col$site == 'SCBI' | mamsTrap_col$site == 'UNDE' | mamsTrap_col$site == 'SERC' | mamsTrap_col$site == 'GRSM' | mamsTrap_col$site == 'BLAN' | mamsTrap_col$site == 'TREE' | mamsTrap_col$site == 'STEI' | mamsTrap_col$site == 'MLBS'),]
+#unique(mamsTrap_col_E$site)
+#nrow(mamsTrap_col_E)
+
+mamsTrap_captures_L_col <- aggregate(larvaeYN ~ plotID + collectDate, data=mamsTrap_captures, FUN=mean)
+#nrow(mamsTrap_captures_L_col)
+#head(mamsTrap_captures_L_col)
+mamsTrap_captures_L_col$site <- substr(mamsTrap_captures_L_col$plotID, 1, 4)
+#head(mamsTrap_captures_L_col)
+#unique(mamsTrap_captures_L_col$site)
+
+mamsTrap_captures_L_col_E <- mamsTrap_captures_L_col[which(mamsTrap_captures_L_col$site == 'HARV' | mamsTrap_captures_L_col$site == 'OSBS' | mamsTrap_captures_L_col$site == 'BART' | mamsTrap_captures_L_col$site == 'ORNL' | mamsTrap_captures_L_col$site == 'TALL' | mamsTrap_captures_L_col$site == 'SCBI' | mamsTrap_captures_L_col$site == 'UNDE' | mamsTrap_captures_L_col$site == 'SERC' | mamsTrap_captures_L_col$site == 'GRSM' | mamsTrap_captures_L_col$site == 'BLAN' | mamsTrap_captures_L_col$site == 'TREE' | mamsTrap_captures_L_col$site == 'STEI' | mamsTrap_captures_L_col$site == 'MLBS'),]
+
+
+
+#unique(mamsTrap_captures_L_col_E$site)
+#nrow(mamsTrap_captures_L_col_E)
+###View(mamsTrap_captures)
+
+mamsTrap_captures_N_col <- aggregate(nymphsYN ~ plotID + collectDate, data=mamsTrap_captures, FUN=mean)
+#nrow(mamsTrap_captures_N_col)
+#head(mamsTrap_captures_N_col)
+
+mamsTrap_captures_N_col$site <- substr(mamsTrap_captures_N_col$plotID, 1, 4)
+#head(mamsTrap_captures_N_col)
+#unique(mamsTrap_captures_N_col$site)
+
+mamsTrap_captures_N_col_E <- mamsTrap_captures_N_col[which(mamsTrap_captures_N_col$site == 'HARV' | mamsTrap_captures_N_col$site == 'OSBS' | mamsTrap_captures_N_col$site == 'BART' | mamsTrap_captures_N_col$site == 'ORNL' | mamsTrap_captures_N_col$site == 'TALL' | mamsTrap_captures_N_col$site == 'SCBI' | mamsTrap_captures_N_col$site == 'UNDE' | mamsTrap_captures_N_col$site == 'SERC' | mamsTrap_captures_N_col$site == 'GRSM' | mamsTrap_captures_N_col$site == 'BLAN' | mamsTrap_captures_N_col$site == 'TREE' | mamsTrap_captures_N_col$site == 'STEI' | mamsTrap_captures_N_col$site == 'MLBS'),]
+
+#unique(mamsTrap_captures_N_col_E$site)
+#nrow(mamsTrap_captures_N_col_E)
+#head(mamsTrap_captures_N_col_E)
+
+
+View(unique(mamsTrap_col_E$taxonID))
+
+unique(mamsTrap_captures_N_col$nymphsYN)
+
+
+nymphburden <- aggregate(nymphsYN ~ plotID, data=mamsTrap_captures, FUN=mean)
+
+mamsTrap_captures %>%
+  group_by(larvaeYN) %>%
+  summarise(sum_counts = sum(larvaeYN), .groups = 'drop') # 7134
+
+
+mamsTrap_captures %>%
+  group_by(nymphsYN) %>%
+  summarise(sum_counts = sum(nymphsYN), .groups = 'drop') # 7134
+
+```
+

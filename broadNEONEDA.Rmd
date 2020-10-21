@@ -369,7 +369,7 @@ ggplot(published_diff, aes(x = state, y = diff, group = lifestage, color = lifes
 ggplot(published_diff, aes(x = region, y = diff), group = lifestage, color = lifestage)+
          #geom_point(size = 3, alpha = .5)+
   geom_jitter(data = neon_diff, aes(x = region, y = 100*(diff)), color = 'blue', size = 3)+
-        geom_jitter(width = .29,alpha = 0.5, aes(size = tot_nymph, color = lifestage))+
+        geom_jitter(width = .4,alpha = 0.5, aes(size = tot_nymph, color = lifestage))+
         scale_size(range = c(3, 10),name = 'Total Ticks Sampled',
              breaks = c(100,500,1000))+
   xlim("westcoast", "midwest", "northeast")+
@@ -378,9 +378,12 @@ ggplot(published_diff, aes(x = region, y = diff), group = lifestage, color = lif
        color = "Life Stage")+
   geom_point(x = .5, y = 85, color = 'blue', size = 3, alpha = .3)+
   annotate(geom = "text", x = .79, y = 85, label = "Neon Data", size = 4, hjust = "center")+
-  geom_hline(yintercept = 10, alpha = .3 ) +
-  geom_hline(yintercept = 50, alpha = .3 ) 
-ggsave("PathogenDifferenceRegionPublished_v1.pdf", dpi = 320)
+  geom_hline(yintercept = 11, alpha = .3 ) +
+  geom_hline(yintercept = 47, alpha = .3 ) +
+  scale_x_discrete(limits = c("westcoast", "midwest", "northeast"),
+    labels = c("West", "Midwest", "Northeast"))+
+  guides(color = guide_legend(order = 1))
+ggsave("PathogenDifferenceRegionPublished_v2.pdf", dpi = 320)
 
 ```
 
@@ -416,7 +419,6 @@ ggplot(published_diff, aes(x = region))+
   clean_background + xtitletheme + ytitletheme +
   labs(x = "Region", y = "Infection Prevalence (%)", title = "Bb and Bm prevalence by site",
        color = "Pathogen Type")
-
 
 ```
 

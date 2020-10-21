@@ -395,7 +395,7 @@ ggplot(published_diff, aes(x = region, y = diff), group = lifestage, color = lif
   xlim("westcoast", "midwest", "northeast")+
   scale_color_manual(values = c('#8B0046', '#008B45'))+
   theme_bw() + xtitletheme + ytitletheme +
-  labs(x = "Region", y = "Difference in prevalence (%)", title = "Difference between Bb and Bm prevalence (%)",
+  labs(x = "Region", y = "Difference in prevalence (%)", title = "Difference between Bb & Bm prevalence (%)",
        color = "Life Stage")+
   geom_point(x = .5, y = 85, fill = 'grey20', size = 3, alpha = .3, shape = 23)+
   annotate(geom = "text", x = .78, y = 85, label = "Neon Sites", size = 4, hjust = "center")+

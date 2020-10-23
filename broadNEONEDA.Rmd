@@ -480,3 +480,189 @@ ggplot(published_diff, aes(x = region))+
 # summary(comparedf(bm, bb, by = 'plotID'))
 ```
 
+
+
+```{r}
+
+library(lme4)
+library(effects)
+library(ggplot2)
+ mod1 <- glm(incidence ~ Date + site, data = Tick_path_col_no0, family = 'poisson')
+ mod2 <- glm(incidence ~ Date, data = Tick_path_col_no0, family = 'poisson')
+
+ plot(predictorEffects(mod1))
+  plot(predictorEffects(mod2))
+  
+  ggplot(Tick_path_col_no0, aes(y = incidence, x = as.numeric(site)))+
+    geom_smooth()+
+    geom_point()+
+    dis
+  
+  ggplot(Tick_path_col_no0, aes(y = incidence, x = as.Date(Date)))+
+    geom_smooth()+
+    geom_point()
+
+Tick_path_col_no0 <- Tick_path_col[which(Tick_path_col$incidence > "0"),]
+
+Tick_path_col_no0$shortdate <- substr(Tick_path_col_no0$Date, 6,nchar(Tick_path_col_no0$Date))
+
+Tick_path_col_no0$shortdate<- as.factor(Tick_path_col_no0$shortdate)
+str(Tick_path_col_no0$shortdate)
+  ggplot(Tick_path_col_no0, aes(y = incidence, x = as.numeric(shortdate)))+
+    geom_smooth()+
+    geom_point()+
+    facet_wrap(~testPathogenName)
+  
+  library(lubridate)
+  
+  ymd(Tick_path_col_no0$Date)
+  
+  Tick_path_col_no0$shortdate <- substr(Tick_path_col_no0$Date, 6,nchar(Tick_path_col_no0$Date))
+    Tick_path_col_no0$month <- substr(Tick_path_col_no0$Date, 6,nchar(Tick_path_col_no0$Date) -3)
+
+Tick_path_col_no0$shortdate<- as.factor(Tick_path_col_no0$shortdate)
+str(Tick_path_col_no0$shortdate)
+  ggplot(Tick_path_col_no0, aes(y = incidence, x = as.numeric(shortdate)))+
+    geom_smooth()+
+    geom_point()+
+    facet_wrap(~testPathogenName)
+  
+```
+ 
+ 
+ final pathogen graph
+ 
+ 
+ **Anaplasma**
+ 
+ - no vertical transmission
+ - rodents, ungulates, sheep,
+ - in sheep infection count levels are high first week and then slowly declines (week 2,3,4)
+ - some amplication of infection intensity in feeding ticks infected previously might have occurred to raise detected infection prevalence, but one PCR positive engorged larva was collected from negative sheep, so transmission betweeen cofeeding ticks occurred or just detected an early infection in sheep
+ 
+ - transmission efficiency declined somewhat in the fourth and subsequent weeks of infection
+ - transmissio efficiency declines gradually from high levels in acute and immediate post acute phases of infection to low levels in sheep (Ogden 2003)
+
+
+**Babesia microti**
+- vertical transmission occurs (Tolkacz 2017) in genus microtus (m. arvalis and M oeconomus)
+
+**Borrelia lonestari**
+- lack of increase of bl infection prevalence in adult a americanum might indicate maintenance by vertical transmission (stromdahl 2003)
+
+
+**Borrelia mayonii**
+- lack of evidence for vertical transmission (Breunner 2018)
+
+**Borrelia miyamotoi**
+- vertical transmission (scoles 2011, han 2019)
+
+```{r} 
+Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPathogenName,
+                                                   levels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis', 'Borrelia lonestari',
+                                                              'Borrelia burgdorferi sensu lato', 'Borrelia mayonii',
+                                                              'Anaplasma phagocytophilum', 'Ehrlichia ewingii'),
+                                                 labels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis', 'Borrelia lonestari',
+                                                              'Borrelia burgdorferi sl', 'Borrelia mayonii',
+                                                              'Anaplasma ph.', 'Ehrlichia ewingii')
+                                                 )
+  
+
+
+  Tick_path_col_no0_path <- Tick_path_col_no0[which(Tick_path_col_no0$testPathogenName != 'Ehrlichia muris-like' &
+                                                      Tick_path_col_no0$testPathogenName != 'Borrelia sp.'),]  
+   
+  
+  ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month)))+
+    geom_smooth(color = 'black')+
+    geom_point(aes(color = site))+
+    facet_wrap(~testPathogenName, scale = 'free_y', ncol = 4) +
+      theme_bw()+
+      theme(strip.background = element_rect(fill = 'gray95'))+
+      theme(legend.position = 'bottom', legend.box = 'horizontal')+
+      labs(x = 'Month', y = 'Incidence')
+    
+ Tick_path_col_no0_path <- Tick_path_col_no0[which(Tick_path_col_no0$testPathogenName != 'Ehrlichia muris-like' &
+                                                      Tick_path_col_no0$testPathogenName != 'Borrelia sp.' &
+                                                      Tick_path_col_no0$testPathogenName != 'Ehrlichia ewingii' &
+                                                      Tick_path_col_no0$testPathogenName != 'Borrelia lonestari'),] 
+ 
+ Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPathogenName,
+                                                   levels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis',
+                                                              'Borrelia burgdorferi sensu lato', 'Borrelia mayonii',
+                                                              'Anaplasma phagocytophilum'),
+                                                 labels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis', 
+                                                              'Borrelia burgdorferi sl', 'Borrelia mayonii',
+                                                              'Anaplasma ph.'))
+  
+   
+ ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month)))+
+    geom_smooth(color = 'black')+
+    geom_point(aes(color = site))+
+    facet_wrap(~testPathogenName, scale = 'free_y', ncol = 3) +
+      theme_bw()+
+      theme(strip.background = element_rect(fill = 'gray95'))+
+      theme(legend.position = 'bottom', legend.box = 'horizontal')+
+      labs(x = 'Month', y = 'Incidence')
+ ggsave("PathogenIncidencebyTypeSite_v1.pdf", dpi = 320)
+ 
+Tick_path_col_no0_path$site <- as.character(Tick_path_col_no0_path$site)
+Tick_path_col_no0_path$site <- as.factor(Tick_path_col_no0_path$site)
+
+unique(Tick_path_col_no0_path$site)
+Tick_path_col_no0_path$region <- Tick_path_col_no0_path$site
+
+Tick_path_col_no0_path$region <- ifelse(Tick_path_col_no0_path$site == "HARV", "northeast",
+                                        ifelse(Tick_path_col_no0_path$site == "BLAN", "midatlantic",
+                                         ifelse(Tick_path_col_no0_path$site == "SCBI", "midatlantic",
+                                         ifelse(Tick_path_col_no0_path$site == "SERC", "midatlantic",
+                                         ifelse(Tick_path_col_no0_path$site == "TREE", "great lakes",
+                                          ifelse(Tick_path_col_no0_path$site == "UKFS", "praire peninsula",
+                                        ifelse(Tick_path_col_no0_path$site == "ORNL","appalachians",
+                                        ifelse(Tick_path_col_no0_path$site == "KONZ","praire peninsula",
+                                        ifelse(Tick_path_col_no0_path$site == "TALL","southeast",
+                                               ifelse(Tick_path_col_no0_path$site == "OSBS","southeast",
+                                        NA))))))))))
+
+
+
+
+ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month), color = region))+
+    geom_smooth(color = 'black')+
+    geom_point()+
+    facet_wrap(~testPathogenName, scale = 'free_y', ncol = 3) +
+      theme_bw()+
+      theme(strip.background = element_rect(fill = 'gray95'))+
+      theme(legend.position = 'bottom', legend.box = 'horizontal')+
+      labs(x = 'Month', y = 'Incidence', color = 'Region')
+ ggsave("PathogenIncidencebyTypeRegion_v1.pdf", dpi = 320)
+ 
+
+    
+   I_scap_N_path_sites <- I_scap_N[which(I_scap_N$site != 'BART' &
+                                                     I_scap_N$site != 'OSBS'&
+                                                    I_scap_N$site != 'DELA' &
+                                                      I_scap_N$site != 'UNDE' &
+                                                      I_scap_N$site != 'TALL'&
+                                                      I_scap_N$site != 'UKFS' &
+                                                      I_scap_N$site != 'LENO' &
+                                                      I_scap_N$site != 'MLBS' &
+                                                      I_scap_N$site != 'STEI'), ] 
+   I_scap_N_path_sites$site = factor(I_scap_N_path_sites$site, 
+                             levels = c("HARV", 
+                                        "TREE",
+                                        "BLAN" , "SCBI" ,"SERC",
+                                        "ORNL"))
+   
+    ggplot(data = I_scap_N_path_sites, aes(x = as.numeric(Month), y =  individualCount))+
+      geom_point()+
+    facet_wrap(~site,scale = 'free_y') +
+      theme_bw()+
+      geom_smooth(color = 'red',aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)))+
+      theme(strip.background = element_rect(fill = 'gray95'))
+```
+

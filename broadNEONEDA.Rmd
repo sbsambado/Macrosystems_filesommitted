@@ -100,6 +100,92 @@ aes(y = individualCount, x = collectDate))+
   ytitletheme +
   xtitletheme 
 ```
+```{r}
+library(MASS) #glm.nb for negative binomial models
+library(glmmTMB) #Salamanders dataset and lots of families
+library(lme4) #grouseticks dataset and mixed model functionality
+library(DHARMa) #model diagnostics
+library(effects) #what do my marginal effects look like?
+library(performance) #binomial model diagnostics
+library(emmeans) #pos
+
+I_scap_N.full <- glm(individualCount~site*sexOrAge*collectDate,family=poisson, data=I_scap_N)
+I_scap_N.full_nointeraction <- glm(individualCount~site+sexOrAge+collectDate,family=poisson, data=I_scap_N)
+I_scap_N.S <- glm(individualCount~site,family=poisson, data=I_scap_N)
+I_scap_N.M <- glm(individualCount~sexOrAge,family=poisson, data=I_scap_N)
+I_scap_N.D <- glm(individualCount~collectDate,family=poisson, data=I_scap_N)
+
+I_scap_N.SplusM <- glm(individualCount~site+sexOrAge,family=poisson, data=I_scap_N)
+I_scap_N.StimesM <- glm(individualCount~site*sexOrAge,family=poisson, data=I_scap_N)
+
+I_scap_N.SplusD <- glm(individualCount~site+collectDate,family=poisson, data=I_scap_N)
+I_scap_N.StimesD <- glm(individualCount~site*collectDate,family=poisson, data=I_scap_N)
+I_scap_N.MplusD <- glm(individualCount~sexOrAge+collectDate,family=poisson, data=I_scap_N)
+I_scap_N.MtimesD <- glm(individualCount~sexOrAge*collectDate,family=poisson, data=I_scap_N)
+
+I_scap_N.SplusMD <- glm(individualCount~site+sexOrAge*collectDate,family=poisson, data=I_scap_N)
+I_scap_N.MplusSD <- glm(individualCount~sexOrAge+site*collectDate,family=poisson, data=I_scap_N)
+I_scap_N.DplusSM <- glm(individualCount~site*sexOrAge+collectDate,family=poisson, data=I_scap_N)
+AIC(I_scap_N.full,I_scap_N.full_nointeraction,I_scap_N.S,I_scap_N.M,I_scap_N.D,
+    I_scap_N.SplusM,I_scap_N.StimesM, I_scap_N.SplusD, I_scap_N.StimesD, 
+    I_scap_N.MplusD, I_scap_N.MtimesD, I_scap_N.SplusMD, I_scap_N.MplusSD,
+    I_scap_N.DplusSM)
+
+BIC(I_scap_N.full,I_scap_N.full_nointeraction,I_scap_N.S,I_scap_N.M,I_scap_N.D,
+    I_scap_N.SplusM,I_scap_N.StimesM, I_scap_N.SplusD, I_scap_N.StimesD, 
+    I_scap_N.MplusD, I_scap_N.MtimesD, I_scap_N.SplusMD, I_scap_N.MplusSD,
+    I_scap_N.DplusSM)
+plot(predictorEffects(I_scap_N.full, ~ sexOrAge),
+     lines=list(multiline=TRUE),
+     lattice=list(key.args=list(columns=2)),
+     confint=list(style="bars"))
+plot(predictorEffects(I_scap_N.full, ~ site),
+     lines=list(multiline=TRUE),
+     lattice=list(key.args=list(columns=2)),
+     confint=list(style="bars"))
+plot(predictorEffects(I_scap_N.full, ~ collectDate),
+     lines=list(multiline=TRUE),
+     lattice=list(key.args=list(columns=2)),
+     confint=list(style="bars"))
+
+
+nb.model <- glm.nb(individualCount ~ site + collectDate,
+    data = I_scap_N)
+# negative binomial summary
+summary(nb.model)
+# reminder of poisson model summary
+summary(nb.model)
+# do my data fit the model assumptions?
+simulationOutput <- simulateResiduals(fittedModel = nb.model, plot = T)
+testDispersion(simulationOutput) # there's still patterns in our residuals, but it's getting better. Might be further resolved with a mixed-model
+## let's visualize
+# line graph shows marginal change in counts for this model given a change in each predictors, while accounting for everything else in model
+plot(allEffects(nb.model))
+
+I_scap_N_colY <- aggregate(individualCount ~ site + Year, data = I_scap_N_col, FUN = sum)
+I_scap_N_colY <- I_scap_N_colY[which(I_scap_N_colY$site != 'DELA' &
+                                     I_scap_N_colY$site != 'UKFS' &
+                                     I_scap_N_colY$site != 'OSBS'),]
+I_scap_N_colY$site <- factor(I_scap_N_colY$site,
+                          levels = c("HARV","TREE",
+                            "SCBI","SERC","BLAN", 
+                            "KONZ","KONA",
+                            "MLBS","ORNL", 
+                            "DELA","TALL" ,"LENO"))
+nb.model <- glm.nb(individualCount ~ site,
+    data = I_scap_N_colY)
+# negative binomial summary
+summary(nb.model)
+# reminder of poisson model summary
+summary(nb.model)
+# do my data fit the model assumptions?
+simulationOutput <- simulateResiduals(fittedModel = nb.model, plot = T)
+testDispersion(simulationOutput) # there's still patterns in our residuals, but it's getting better. Might be further resolved with a mixed-model
+## let's visualize
+# line graph shows marginal change in counts for this model given a change in each predictors, while accounting for everything else in model
+plot(allEffects(nb.model), axes = list(x = list(rotate = 45, lab = "Site")), main = 'predict')
+
+```
 
 ```{r}
 tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)

@@ -165,13 +165,15 @@ plot(allEffects(nb.model))
 I_scap_N_colY <- aggregate(individualCount ~ site + Year, data = I_scap_N_col, FUN = sum)
 I_scap_N_colY <- I_scap_N_colY[which(I_scap_N_colY$site != 'DELA' &
                                      I_scap_N_colY$site != 'UKFS' &
-                                     I_scap_N_colY$site != 'OSBS'),]
+                                     I_scap_N_colY$site != 'OSBS' &
+                                       I_scap_N_colY$site != 'MLBS' &
+                                       I_scap_N_colY$site != 'TALL'),]
 I_scap_N_colY$site <- factor(I_scap_N_colY$site,
                           levels = c("HARV","TREE",
                             "SCBI","SERC","BLAN", 
                             "KONZ","KONA",
-                            "MLBS","ORNL", 
-                            "DELA","TALL" ,"LENO"))
+                            "ORNL", 
+                            "DELA","LENO"))
 nb.model <- glm.nb(individualCount ~ site,
     data = I_scap_N_colY)
 # negative binomial summary
@@ -209,9 +211,50 @@ sum(Tick_path$individualCount)
 Tick_path$incidence <- ifelse(Tick_path$testResult == 'Positive', 1, 0)
 Tick_path$collectDate <- as.character(Tick_path$collectDate)
 Tick_path$Date <- substr(Tick_path$collectDate, 1, nchar(Tick_path$collectDate)-7)
+Tick_path$Month <- substr(Tick_path$Date, 6, nchar(Tick_path$Date)-3)
 #head(Tick_path_Bb)
 #nrow(Tick_path_Bb)
 #View(Tick_path)
+
+
+```
+
+try to do by tested numbers
+
+```{r}
+library(tidyverse)
+path <- Tick_path
+
+nrow(Path)
+Path <- path %>%
+  filter(testResult == 'Positive' | testResult == 'Negative') %>%
+  group_by(testPathogenName, Month) %>%
+  summarize(tested = length(testResult),.groups = 'drop')
+
+
+ Path$testPathogenName = factor(Path$testPathogenName,
+                                                   levels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis',
+                                                              'Borrelia burgdorferi sensu lato', 'Borrelia mayonii',
+                                                              'Anaplasma phagocytophilum'),
+                                                 labels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis', 
+                                                              'Borrelia burgdorferi sl', 'Borrelia mayonii',
+                                                              'Anaplasma ph.'))
+
+Path <- Path[which(Path$testPathogenName != '<NA>'),]
+ggplot(Path, aes(x = Month, y = tested))+
+  geom_point(aes(color = testPathogenName))+
+  facet_wrap( ~ testPathogenName, scale = 'free_y')+
+  rotatexaxistheme+
+      theme_bw()+
+      geom_smooth(color = 'red',aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)))+
+      theme(strip.background = element_rect(fill = 'gray95')) +
+  theme(legend.position = 'bottom', legend.box = 'horizontal')
+```
+
+
+```{r}
 Tick_path_col <- aggregate(incidence ~ plotID + Date + testPathogenName, data=Tick_path, FUN=mean)
 #head(Tick_path_Bb_col, n=20)
 #nrow(Tick_path_Bb_col)
@@ -318,7 +361,7 @@ ggplot(Tick_path_col_no0, aes(y = incidence, x = site, group = testPathogenName,
     titleytheme+ xtitletheme+ rotatexaxistheme+
       theme(legend.position = 'bottom', legend.box = 'horizontal', 
             legend.title = element_text(size = 6), legend.text = element_text(size = 5))
-ggsave("PathogenIncidenceTicksSite_v3.pdf", dpi = 320)
+#ggsave("PathogenIncidenceTicksSite_v3.pdf", dpi = 320)
  
 
 # # remove ricketssia
@@ -581,8 +624,7 @@ library(ggplot2)
   
   ggplot(Tick_path_col_no0, aes(y = incidence, x = as.numeric(site)))+
     geom_smooth()+
-    geom_point()+
-    dis
+    geom_point()
   
   ggplot(Tick_path_col_no0, aes(y = incidence, x = as.Date(Date)))+
     geom_smooth()+
@@ -644,6 +686,10 @@ str(Tick_path_col_no0$shortdate)
 - vertical transmission (scoles 2011, han 2019)
 
 ```{r} 
+
+  Tick_path_col_no0_path <- Tick_path_col_no0[which(Tick_path_col_no0$testPathogenName != 'Ehrlichia muris-like' &
+                                                      Tick_path_col_no0$testPathogenName != 'Borrelia sp.'),]  
+
 Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPathogenName,
                                                    levels = c('Borrelia miyamotoi', 'Babesia microti',
                                                               'Ehrlichia chaffeensis', 'Borrelia lonestari',
@@ -657,8 +703,7 @@ Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPath
   
 
 
-  Tick_path_col_no0_path <- Tick_path_col_no0[which(Tick_path_col_no0$testPathogenName != 'Ehrlichia muris-like' &
-                                                      Tick_path_col_no0$testPathogenName != 'Borrelia sp.'),]  
+
    
   
   ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month)))+
@@ -725,9 +770,37 @@ ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month), color =
       theme(strip.background = element_rect(fill = 'gray95'))+
       theme(legend.position = 'bottom', legend.box = 'horizontal')+
       labs(x = 'Month', y = 'Incidence', color = 'Region')
- ggsave("PathogenIncidencebyTypeRegion_v1.pdf", dpi = 320)
+ #ggsave("PathogenIncidencebyTypeRegion_v1.pdf", dpi = 320)
  
 
+Pathcolor <- Path %>%
+  group_by(testPathogenName) %>%
+  summarise(totaltested = sum(tested), .groups = 'drop')
+
+Path$totaltested <- ifelse(Path$testPathogenName == 'Borrelia miyamotoi', "1,282",
+                                ifelse(Path$testPathogenName == 'Babesia microti', "1,282",
+                                ifelse(Path$testPathogenName == 'Borrelia burgdorferi sl', "1,282",
+                                ifelse(Path$testPathogenName == 'Borrelia mayonii', "1,282",
+                                ifelse(Path$testPathogenName == 'Anaplasma ph.', "8,559",
+                                 ifelse(Path$testPathogenName == 'Ehrlichia chaffeensis', "7,277",
+                                        NA))))))
+
+ggplot(Path, aes(x = Month, y = tested, fill = totaltested))+
+  geom_histogram(stat = 'identity')+
+  facet_wrap(~testPathogenName, scale = 'free_y')+
+  theme_bw()+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  labs(x = 'Month', y = 'Tested', fill = 'Total tested')+
+  xtitletheme + ytitletheme +
+  theme(legend.position = 'bottom', legend.box = 'horizontal')
+ # scale_fill_manual(values = c('#87A0B4FF', '#4883B4FF', '#0062B4FF'))
+ ggsave("PathogenIncidencebyTypeTotaltested_v1.pdf", dpi = 320)
+
+
+
+
+
+unique(Path$tested)
     
    I_scap_N_path_sites <- I_scap_N[which(I_scap_N$site != 'BART' &
                                                      I_scap_N$site != 'OSBS'&

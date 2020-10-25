@@ -738,7 +738,8 @@ Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPath
       theme_bw()+
       theme(strip.background = element_rect(fill = 'gray95'))+
       theme(legend.position = 'bottom', legend.box = 'horizontal')+
-      labs(x = 'Month', y = 'Incidence')
+      labs(x = 'Month', y = 'Incidence')+
+   xtitletheme + ytitletheme
  ggsave("PathogenIncidencebyTypeSite_v1.pdf", dpi = 320)
  
 Tick_path_col_no0_path$site <- as.character(Tick_path_col_no0_path$site)
@@ -769,13 +770,14 @@ ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month), color =
       theme_bw()+
       theme(strip.background = element_rect(fill = 'gray95'))+
       theme(legend.position = 'bottom', legend.box = 'horizontal')+
-      labs(x = 'Month', y = 'Incidence', color = 'Region')
- #ggsave("PathogenIncidencebyTypeRegion_v1.pdf", dpi = 320)
+      labs(x = 'Month', y = 'Incidence', color = 'Region')+
+   xtitletheme + ytitletheme
+ ggsave("PathogenIncidencebyTypeRegion_v2.pdf", dpi = 320)
  
 
-Pathcolor <- Path %>%
-  group_by(testPathogenName) %>%
-  summarise(totaltested = sum(tested), .groups = 'drop')
+# Pathcolor <- Path %>%
+#   group_by(testPathogenName) %>%
+#   summarise(totaltested = sum(tested), .groups = 'drop')
 
 Path$totaltested <- ifelse(Path$testPathogenName == 'Borrelia miyamotoi', "1,282",
                                 ifelse(Path$testPathogenName == 'Babesia microti', "1,282",
@@ -817,11 +819,6 @@ unique(Path$tested)
                                         "BLAN" , "SCBI" ,"SERC",
                                         "ORNL"))
    
-    ggplot(data = I_scap_N_path_sites, aes(x = as.numeric(Month), y =  individualCount))+
-      geom_point()+
-    facet_wrap(~site,scale = 'free_y') +
-      theme_bw()+
-      geom_smooth(color = 'red',aes(ymin = ifelse(..ymin.. < 0, 0, ..ymin..)))+
-      theme(strip.background = element_rect(fill = 'gray95'))
+
 ```
 

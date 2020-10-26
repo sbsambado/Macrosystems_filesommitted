@@ -50,6 +50,53 @@ julian date
 
 ticks_taxa2$julian <- as.Date(ticks_taxa2$collectDate, format = "%Y-%m- %d")
 ticks_taxa2$julian <- format(ticks_taxa2$julian, "%j")
+ticks_taxa2$week <- round(as.numeric(ticks_taxa2$julian)/7)
+
+
+## round up week
+plot(predictorEffects(glm(individualCount ~ week, data = I_scap_N, family = poisson)))
+Iscap_Ncol <-aggregate(individualCount ~ week, data = I_scap_N, FUN = sum)
+plot(predictorEffects(glm(individualCount ~ week, data = Iscap_Ncol, family = poisson),lines=list(multiline=TRUE),
+     lattice=list(key.args=list(columns=2)),
+     confint=list(style="bars")))
+
+ticks_taxa2_col <- aggregate(individualCount ~ sexOrAge + week, data = ticks_taxa2, FUN = sum)
+
+ticks_taxa2_colN <- ticks_taxa2_col[which(ticks_taxa2_col$sexOrAge == 'Nymph'),]
+as.factor(ticks_taxa2_colN$julian)
+
+ggplot(ticks_taxa2_colN, aes(x = as.factor(week), y = individualCount))+
+  geom_point()+
+  geom_area()+
+  #facet_wrap(~sexOrAge, scale = 'free_y')+
+  theme_minimal() +
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  geom_vline(xintercept = '23', color = 'red')
+  
+  #geom_vline(xintercept=ticks_taxa2_colN$week[ticks_taxa2_colN$individualCount == max(ticks_taxa2_colN$individualCount)],color = 'red')
+
+
+ticks_taxa2_col <- aggregate(individualCount ~ sexOrAge + week, data = ticks_taxa2, FUN = sum)
+
+ticks_taxa2_colA <- ticks_taxa2_col[which(ticks_taxa2_col$sexOrAge == 'Female' |
+                                            ticks_taxa2_col$sexOrAge == 'Male'),]
+
+adult <- aggregate(individualCount ~ week, data = ticks_taxa2_colA, FUN = sum)
+as.factor(ticks_taxa2_colA$julian)
+
+ggplot(adult, aes(x = factor(week), y = individualCount))+
+  geom_point()+
+  geom_line()+
+  #facet_wrap(~sexOrAge, scale = 'free_y')+
+  theme_minimal() +
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  geom_vline(xintercept = '18', color = 'blue')+
+  geom_vline(xintercept = '18', color = 'red')
+  
+
+
+
+# julian date
 
 breaks = seq(0, 300, by = 5)
 #I_scap_N_no0 <- I_scap_N[which(I_scap_N$individualCount != 0),]
@@ -64,6 +111,13 @@ ggplot(ticks_taxa2, aes(x = julian, y = individualCount, color = sexOrAge))+
 
 plot(predictorEffects(glm(individualCount ~ julian, data = I_scap_N, family = poisson)))
 
+Iscap_Ncol <-aggregate(individualCount ~ julian, data = I_scap_N, FUN = sum)
+plot(predictorEffects(glm(individualCount ~ julian, data = Iscap_Ncol, family = poisson),lines=list(multiline=TRUE),
+     lattice=list(key.args=list(columns=2)),
+     confint=list(style="bars")))
+
+
+
 
 ticks_taxa2_col <- aggregate(individualCount ~ sexOrAge + julian, data = ticks_taxa2, FUN = sum)
 
@@ -76,7 +130,7 @@ ggplot(ticks_taxa2_colN, aes(x = julian, y = individualCount, color = sexOrAge))
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, size = 3, vjust = 0.5))+
   theme(legend.position = 'bottom', legend.box = 'horizontal')+
-  geom_vline(xintercept=ticks_taxa2_colN$julian[ticks_taxa2_colN$individualCount == max(ticks_taxa2_colN$individualCount)],color = 'red')
+geom_vline(xintercept=ticks_taxa2_colN$julian[ticks_taxa2_colN$individualCount == max(ticks_taxa2_colN$individualCount)],color = 'red')
 
   #added max line vertical line!
 ggplot(ticks_taxa2_col, aes(x = julian, y = individualCount, color = sexOrAge))+

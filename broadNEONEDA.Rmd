@@ -65,7 +65,7 @@ ticks_taxa2_col <- aggregate(individualCount ~ sexOrAge + week, data = ticks_tax
 ticks_taxa2_colN <- ticks_taxa2_col[which(ticks_taxa2_col$sexOrAge == 'Nymph'),]
 as.factor(ticks_taxa2_colN$julian)
 
-ggplot(ticks_taxa2_colN, aes(x = as.factor(week), y = individualCount))+
+ggplot(ticks_taxa2_colN, aes(x = as.factor(week, y = individualCount))+
   geom_point()+
   geom_area()+
   #facet_wrap(~sexOrAge, scale = 'free_y')+
@@ -826,15 +826,15 @@ Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPath
                                                       Tick_path_col_no0$testPathogenName != 'Ehrlichia ewingii' &
                                                       Tick_path_col_no0$testPathogenName != 'Borrelia lonestari'),] 
  
- Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPathogenName,
-                                                   levels = c('Borrelia miyamotoi', 'Babesia microti',
-                                                              'Ehrlichia chaffeensis',
-                                                              'Borrelia burgdorferi sensu lato', 'Borrelia mayonii',
-                                                              'Anaplasma phagocytophilum'),
-                                                 labels = c('Borrelia miyamotoi', 'Babesia microti',
-                                                              'Ehrlichia chaffeensis', 
-                                                              'Borrelia burgdorferi sl', 'Borrelia mayonii',
-                                                              'Anaplasma ph.'))
+ # Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPathogenName,
+ #                                                   levels = c('Borrelia miyamotoi', 'Babesia microti',
+ #                                                              'Ehrlichia chaffeensis',
+ #                                                              'Borrelia burgdorferi sensu lato', 'Borrelia mayonii',
+ #                                                              'Anaplasma phagocytophilum'),
+ #                                                 labels = c('Borrelia miyamotoi', 'Babesia microti',
+ #                                                              'Ehrlichia chaffeensis', 
+ #                                                              'Borrelia burgdorferi sl', 'Borrelia mayonii',
+ #                                                              'Anaplasma ph.'))
   
    
  ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month)))+
@@ -867,7 +867,12 @@ Tick_path_col_no0_path$region <- ifelse(Tick_path_col_no0_path$site == "HARV", "
                                         NA))))))))))
 
 
-
+ Tick_path_col_no0_path$testPathogenName = factor(Tick_path_col_no0_path$testPathogenName,
+                                                   levels = c('Borrelia miyamotoi', 'Babesia microti',
+                                                              'Ehrlichia chaffeensis', 
+                                                              'Borrelia burgdorferi sl',
+                                                              'Anaplasma ph.',
+                                                              'Borrelia mayonii'))
 
 ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month), color = region))+
     geom_smooth(color = 'black')+
@@ -878,7 +883,7 @@ ggplot(Tick_path_col_no0_path, aes(y = incidence, x = as.numeric(month), color =
       theme(legend.position = 'bottom', legend.box = 'horizontal')+
       labs(x = 'Month', y = 'Incidence', color = 'Region')+
    xtitletheme + ytitletheme
- ggsave("PathogenIncidencebyTypeRegion_v2.pdf", dpi = 320)
+ ggsave("PathogenIncidencebyTypeRegion_v3.pdf", dpi = 320)
  
 
 # Pathcolor <- Path %>%

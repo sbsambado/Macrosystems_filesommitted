@@ -45,6 +45,58 @@ unique(I_scap_N$site)
 
 ```
 
+julian date
+```{r}
+
+ticks_taxa2$julian <- as.Date(ticks_taxa2$collectDate, format = "%Y-%m- %d")
+ticks_taxa2$julian <- format(ticks_taxa2$julian, "%j")
+
+breaks = seq(0, 300, by = 5)
+#I_scap_N_no0 <- I_scap_N[which(I_scap_N$individualCount != 0),]
+as.factor(ticks_taxa2$julian)
+ggplot(ticks_taxa2, aes(x = julian, y = individualCount, color = sexOrAge))+
+  geom_point()+
+  facet_wrap(~sexOrAge, scale = 'free_y')+
+  theme_minimal() +
+  rotatexaxistheme +
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  scale_x_discrete(breaks = 1:7)
+
+plot(predictorEffects(glm(individualCount ~ julian, data = I_scap_N, family = poisson)))
+
+
+ticks_taxa2_col <- aggregate(individualCount ~ sexOrAge + julian, data = ticks_taxa2, FUN = sum)
+
+ticks_taxa2_colN <- ticks_taxa2_col[which(ticks_taxa2_col$sexOrAge == 'Nymph'),]
+as.factor(ticks_taxa2_colN$julian)
+
+ggplot(ticks_taxa2_colN, aes(x = julian, y = individualCount, color = sexOrAge))+
+  geom_point()+
+  facet_wrap(~sexOrAge, scale = 'free_y')+
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, size = 3, vjust = 0.5))+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  geom_vline(xintercept=ticks_taxa2_colN$julian[ticks_taxa2_colN$individualCount == max(ticks_taxa2_colN$individualCount)],color = 'red')
+
+  #added max line vertical line!
+ggplot(ticks_taxa2_col, aes(x = julian, y = individualCount, color = sexOrAge))+
+  geom_point()+
+  facet_wrap(~sexOrAge, scale = 'free_y')+
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, size = 3, vjust = 0.5))+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+  geom_vline(xintercept=ticks_taxa2_col$julian[ticks_taxa2_col$individualCount == max(ticks_taxa2_col$individualCount)],color = 'red')
+
+
+
+
+plot(predictorEffects(glm(individualCount ~ julian, data = ticks_taxa2_colN, family = poisson)))
+
+plot(ecdf(ticks_taxa2_col[ticks_taxa2_col$sexOrAge == 'Nymph',]$individualCount), col = 'red')
+lines(ecdf(ticks_taxa2_col[ticks_taxa2_col$sexOrAge == "Female",]$individualCount), col = 'purple')
+lines(ecdf(ticks_taxa2_col[ticks_taxa2_col$sexOrAge == "Male",]$individualCount), col = 'green')
+```
+
 give regions
 ```{r}
 
@@ -748,16 +800,16 @@ Tick_path_col_no0_path$site <- as.factor(Tick_path_col_no0_path$site)
 unique(Tick_path_col_no0_path$site)
 Tick_path_col_no0_path$region <- Tick_path_col_no0_path$site
 
-Tick_path_col_no0_path$region <- ifelse(Tick_path_col_no0_path$site == "HARV", "northeast",
-                                        ifelse(Tick_path_col_no0_path$site == "BLAN", "midatlantic",
-                                         ifelse(Tick_path_col_no0_path$site == "SCBI", "midatlantic",
-                                         ifelse(Tick_path_col_no0_path$site == "SERC", "midatlantic",
-                                         ifelse(Tick_path_col_no0_path$site == "TREE", "great lakes",
-                                          ifelse(Tick_path_col_no0_path$site == "UKFS", "praire peninsula",
-                                        ifelse(Tick_path_col_no0_path$site == "ORNL","appalachians",
-                                        ifelse(Tick_path_col_no0_path$site == "KONZ","praire peninsula",
-                                        ifelse(Tick_path_col_no0_path$site == "TALL","southeast",
-                                               ifelse(Tick_path_col_no0_path$site == "OSBS","southeast",
+Tick_path_col_no0_path$region <- ifelse(Tick_path_col_no0_path$site == "HARV", "Northeast",
+                                        ifelse(Tick_path_col_no0_path$site == "BLAN", "Midatlantic",
+                                         ifelse(Tick_path_col_no0_path$site == "SCBI", "Midatlantic",
+                                         ifelse(Tick_path_col_no0_path$site == "SERC", "Midatlantic",
+                                         ifelse(Tick_path_col_no0_path$site == "TREE", "Great lakes",
+                                          ifelse(Tick_path_col_no0_path$site == "UKFS", "Praire peninsula",
+                                        ifelse(Tick_path_col_no0_path$site == "ORNL","Appalachians",
+                                        ifelse(Tick_path_col_no0_path$site == "KONZ","Praire peninsula",
+                                        ifelse(Tick_path_col_no0_path$site == "TALL","Southeast",
+                                               ifelse(Tick_path_col_no0_path$site == "OSBS","Southeast",
                                         NA))))))))))
 
 

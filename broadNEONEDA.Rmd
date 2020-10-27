@@ -643,6 +643,39 @@ ggplot(published_diff, aes(x = region, y = diff), group = lifestage, color = lif
   theme(legend.position = 'bottom', legend.box = 'horizontal')+
 ggsave("PathogenDifferenceRegionPublished_v3.pdf", dpi = 320)
 
+
+# just nymphs, just published data
+published_diffN <- published_diff[which(published_diff$lifestage == 'nymph'),]
+#published_diffN <- published_diff[which(published_diff$region != 'midatlantic'),]
+
+ggplot(published_diffN, aes(x = region, y = diff))+
+  geom_boxplot(fill = 'grey90')+
+        geom_jitter(width = .1,alpha = 0.5, aes(size = tot_nymph, color = region))+
+        scale_size(range = c(3, 10),name = 'Total ticks tested',
+             breaks = c(100,500,1000))+
+  theme_bw() + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Difference in prevalence per site (%)", title = "Difference between Bb & Bm nymphal prevalence (%)")+
+  scale_x_discrete(limits = c("westcoast", "midwest", "northeast"),
+    labels = c("West", "Midwest", "Northeast"))+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+guides(color = FALSE)
+ggsave("PathogenDifferenceRegionPublished_v4.pdf", dpi = 320)
+
+
+ggplot(published_diffN, aes(x = region, y = diff))+
+  geom_boxplot(fill = 'grey90')+
+  #geom_point(size = 3, alpha = .5, aes(color = region))+
+  geom_jitter(data = neon_diff, aes(x = region, y = 100*(diff)), size = 3, shape = 23)+
+        geom_jitter(width = .1,alpha = 0.5, aes(size = tot_nymph, color = region))+
+        scale_size(range = c(3, 10),name = 'Total ticks tested',
+             breaks = c(100,500,1000))+
+  theme_bw() + xtitletheme + ytitletheme +
+  labs(x = "Region", y = "Difference in prevalence per site (%)", title = "Difference between Bb & Bm nymphal prevalence (%)")+
+  scale_x_discrete(limits = c("westcoast", "midwest", "northeast"),
+    labels = c("West", "Midwest", "Northeast"))+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')+
+guides(color = FALSE)
+
 ```
 
 
@@ -981,6 +1014,8 @@ ggplot(Tick_path_ag, aes(y = incidence, x = as.numeric(Month), color = siteID))+
    xtitletheme + ytitletheme
 
 ```
+
+
 
 ```{r}
 

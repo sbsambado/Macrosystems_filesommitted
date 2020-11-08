@@ -1111,7 +1111,7 @@ optimal$site = factor(optimal$site,
     theme(legend.position = c(.96, .97))+
     theme(legend.box.margin = margin(0, 0, 0, 0))
   
-  
+  library(ggplot2)
  # lets smooth this out 
   ggplot(Optimal, aes(y = log(sum_counts), x = Weeks, group = sexOrAge,fill = sexOrAge))+
   #geom_density(stat = 'identity')+ #alpha = .9
@@ -1125,7 +1125,7 @@ optimal$site = factor(optimal$site,
   theme(strip.text.x = element_text(face = 'bold')) +
   theme(axis.title.y =  element_text(face = 'bold',size = 11, vjust = .5))+
   theme(axis.title.x =  element_text(face = 'bold',size = 11))+
-  scale_fill_manual(values = c('#4682B4', '#B4464B'))+
+  scale_fill_manual(values = c('#6096c8', '#ffcc00'))+
   labs(fill = "Life stage")+
    #guides(fill = guide_legend(order = 1),color = FALSE)+ 
     theme(legend.title = element_text(size = 7),legend.text = element_text(size = 7))+
@@ -1147,11 +1147,57 @@ optimal$site = factor(optimal$site,
   annotate(geom = "text", x = 62, y = 5.7, label = "July", size = 2.5) +
   annotate(geom = "text", x = 87, y = 5.7, label = "August", size = 2.5) +
   annotate(geom = "text", x = 110.7, y = 5.7, label = "September", size = 2.5)
-ggsave("TickLifestagePhenologySite_v1.pdf", dpi = 320)
+ggsave("TickLifestagePhenologySite_v2.pdf", dpi = 320)
 
 
 ```
 
+smooth out dates
+```{r}
+Optimal <-  optimal  %>%
+  group_by(Weeks, site, sexOrAge) %>%
+  summarise(sum_counts = sum(individualCount), .groups = 'drop')
+  
+Optimal$julian <- as.Date(Optimal$Weeks, format = "%m- %d")
+Optimal$julian <- format(Optimal$julian, "%j")
+Optimal$week <- round(as.numeric(Optimal$julian)/6)
+
+
+
+  ggplot(Optimal, aes(y = log(sum_counts + 1), x = week, group = sexOrAge,fill = sexOrAge))+
+    stat_smooth(geom = 'area', method = 'loess', span = .2, alpha = .9)+
+  facet_wrap(~ site, scale = 'free_y', ncol = 1)+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 0, size = 10, vjust = 0.5))+
+  labs(y = 'Log(tick counts) for 2016 - 2019', x = 'Weeks')+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 11, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 11))+
+  scale_fill_manual(values = c('#6096c8', '#ffcc00'))+
+  labs(fill = "Life stage")+
+    theme(legend.title = element_text(size = 7),legend.text = element_text(size = 7))+
+    theme(legend.position = c(.067, .940), legend.text = element_text(face = "bold"),
+    legend.title = element_text(face = "bold")) +
+    xlim(12, 55)+
+    coord_cartesian(ylim = c(0,6.5))+
+    theme(legend.box.background = element_rect(fill = 'white'))
+  ggsave("TickLifestagePhenologySite_v3.pdf", dpi = 320)
+
+  
+```
+
+```{r}
+
+ggplot(Optimal, aes(x = week, y = log(sum_counts + 1))) + 
+  geom_line()+
+  facet_grid(site ~ sexOrAge)
+
+ggplot(Optimal, aes(x = week, y = log(sum_counts + 1), color = sexOrAge)) + 
+  geom_line()+
+  facet_wrap(~site, scale = 'free_y', ncol = 1)+
+  theme_minimal()
+```
 
 
 First time mammal data point pops up

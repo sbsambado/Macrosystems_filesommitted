@@ -1,0 +1,334 @@
+---
+title: "NIH_R21"
+author: "sbsambado"
+date: "1/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup, include= FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(error = FALSE)
+knitr::opts_chunk$set(strip.white = TRUE)
+```
+
+
+```{r packages and code savers}
+library(dplyr)
+library(tidyverse)
+library(stats)
+library(base)
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+library(lubridate)
+library(caret)
+library(splines)
+library(cowplot)
+
+clean_background <- theme(plot.background = element_rect("white"),
+        panel.background = element_rect("white"),
+        panel.grid = element_line("white"),
+        axis.line = element_line("gray25"),
+        axis.text = element_text(size = 12, color = "gray25"),
+        axis.title = element_text(color = "gray25"),
+        legend.text = element_text(size = 12),
+        legend.key = element_rect("white"))
+
+multiplottitletheme <- theme(plot.title = element_text(face = 'bold', hjust = 0.04, size = 10,  color = 'black', vjust = -6))
+
+rotatexaxistheme <- theme(axis.text.x = element_text(angle = 90, size = 8, vjust = 0.5))
+
+ytitletheme <- theme(axis.title.y = element_text(face = 'bold', size = 12, vjust = 0.5))
+
+xtitletheme <- theme(axis.title.x = element_text(face = 'bold', size = 12, vjust = 0.5))
+
+
+```
+
+
+Original csv's are pulled from NEON.
+On my computer, these files are stored in a different R Project/Git Repository called 'Macrosystems'
+
+```{r pull original csvs}
+
+# ticks
+ticks <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_fielddata.csv", header=T)
+#head(ticks)
+#unique(ticks$siteID)
+#tail(ticks)
+#nrow(ticks)
+
+# tick taxa
+ticks_taxa <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10093/stackedFiles/tck_taxonomyProcessed.csv", header=T)
+#head(ticks_taxa)
+#nrow(ticks_taxa)
+
+# mammals
+mams <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10072/stackedFiles/mam_pertrapnight.csv", header=T)
+#head(mams)
+#nrow(mams)
+
+# tick pathogens
+tick_path <- read.csv("/Users/samanthasambado/Macrosystems/filesToStack10092/stackedFiles/tck_pathogen.csv", header=T)
+#head(tick_path)
+#nrow(tick_path)
+
+
+```
+
+
+# Andy's code to tidy up csv's
+
+**Ticks**
+
+```{r andy tidying csvs}
+############## working thorugh tick taxa data frame #######
+#unique(ticks_taxa$scientificName)
+#nrow(ticks_taxa)
+
+
+############## site selection #######
+#extract plotID
+ticks_taxa$site <- substr(ticks_taxa$plotID, 1, 4)
+
+# how many unique sites
+#unique(ticks_taxa$site)
+
+# select sites that use this criteria
+ticks_taxa_E <- ticks_taxa[which(ticks_taxa$site == 'BART' | ticks_taxa$site == 'HARV' | ticks_taxa$site == 'HOPB' | ticks_taxa$site == 'SCBI' | ticks_taxa$site == 'SERC' | ticks_taxa$site == 'BLAN' | ticks_taxa$site == 'LEWI' | ticks_taxa$site == 'POSE' | ticks_taxa$site == 'UNDE' | ticks_taxa$site == 'TREE' | ticks_taxa$site == 'STEI' | ticks_taxa$site == 'LIRO' | ticks_taxa$site == 'CRAM'),]
+
+
+ticks_taxa_E <- ticks_taxa_E[, c(3,4,8,11,23,24,33)]
+
+ixodidae <- ticks_taxa_E[which(ticks_taxa_E$scientificName == "Ixodidae sp." |
+                                 ticks_taxa_E$scientificName == "Ixodes scapularis" |
+                                 ticks_taxa_E$scientificName == "Ixodidae spp."),]
+
+unique(ixodidae$site)
+
+ixodidae$region <- ixodidae$site
+ixodidae$region[ixodidae$site == "BART"] <- "northeast"
+ixodidae$region[ixodidae$site == "HARV"] <- "northeast"
+ixodidae$region[ixodidae$site == "BLAN"] <- "midatlantic"
+ixodidae$region[ixodidae$site == "SCBI"] <- "midatlantic"
+ixodidae$region[ixodidae$site == "SERC"] <- "midatlantic" 
+ixodidae$region[ixodidae$site == "STEI"] <- "midwest"
+ixodidae$region[ixodidae$site == "TREE"] <- "midwest"
+ixodidae$region[ixodidae$site == "UNDE"] <- "midwest"
+
+ixodidae$Month <- substr(ixodidae$collectDate, 6, nchar(ixodidae$collectDate)-10)
+ixodidae$Weeks <- substr(ixodidae$collectDate, 6, nchar(ixodidae$collectDate)-7)
+
+ixodidae$julian <- as.Date(ixodidae$Weeks, format = "%m- %d")
+ixodidae$julian <- format(ixodidae$julian, "%j")
+ixodidae$week <- round(as.numeric(ixodidae$julian)/7)
+
+smol <- ixodidae[, c(5,6,7,8,9,10,12)]
+
+smol[which.max(smol$individualCount),]
+
+smol <- subset(smol, individualCount!= 7000)
+
+smol_juv <- subset(smol, sexOrAge == "Larva" | sexOrAge == "Nymph")
+
+smol_juv$region = factor(smol_juv$region,
+                   levels = c("midwest",
+                              "northeast",
+                              "midatlantic"),
+                   labels = c("Midwest",
+                              "Northeast",
+                              "Mid-Atlantic"),)
+
+```
+
+```{r}
+ggplot(smol_juv, aes(x = week, y = log(individualCount), fill = sexOrAge))+
+  geom_histogram(stat = "identity") +
+  facet_wrap(~region, scale= "free_y", ncol = 1)+
+  scale_fill_manual(values = c('#6096c8', '#ffcc00'))+
+  labs(fill = "Life stage")+
+  theme_bw()+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 11, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 11))+
+  labs(y = 'Individual tick counts\n 2016 - 2019', x = 'Weeks')+
+  xlim(17, 43)
+
+smol_juv_MWMA <- subset(smol_juv, smol_juv$region != "Northeast")
+ggplot(smol_juv_MWMA, aes(x = week, y = log(individualCount), fill = sexOrAge))+
+  geom_bar(stat = "identity") +
+  facet_wrap(~region, scale= "free_y", ncol = 1)+
+  scale_fill_manual(values = c('#6096c8', '#ffcc00'))+
+  labs(fill = "Life stage")+
+  theme_bw()+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 11, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 11))+
+  labs(y = 'Log(tick counts)\n 2016 - 2019', x = 'Weeks')+
+  xlim(17, 41)
+  ggsave("TickLifestagePhenologyMWMA_v1.pdf", dpi = 320)
+
+  
+```
+
+
+
+
+```{r}
+############## tick selection #######
+
+# select deva
+DVAR <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Dermacentor variabilis'),]
+#nrow(DVAR)
+#head(DVAR)
+
+# select deva larvae
+DVAR_L <- DVAR[which(DVAR$sexOrAge == 'Larva'),]
+#nrow(DVAR_L)
+
+# select deva nymphs
+DVAR_N <- DVAR[which(DVAR$sexOrAge == 'Nymph'),]
+#nrow(DVAR_N)
+
+# select iscap
+ISCP <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Ixodes scapularis'),]
+#nrow(ISCP)
+
+# select amblyomma
+AAM <- ticks_taxa_E[which(ticks_taxa_E$scientificName == 'Amblyomma americanum'),]
+#nrow(AAM)
+
+# select amblyomma larva
+AAM_L <- AAM[which(AAM$sexOrAge == 'Larva'),]
+#nrow(AAM_L)
+
+# select amblyomma nymph
+AAM_N <- AAM[which(AAM$sexOrAge == 'Nymph'),]
+#nrow(AAM_N)
+
+# treat plot ID as character
+ticks_taxa$plotID <- lapply(ticks_taxa$plotID, as.character)
+
+# extract certain plots
+ticks_taxa$siteID <- substr(ticks_taxa$plotID, 1, nchar(ticks_taxa$plotID)-4)
+#head(ticks_taxa)
+
+#plot(ticks_taxa$collectDate, ticks_taxa$individualCount)
+
+# select columns
+ticks_taxa2 <- ticks_taxa[,c(3,4,8,23,24,33)]
+####View(head(ticks_taxa2, n=20))
+#nrow(ticks_taxa2)
+
+
+############## aggregating ixodes life stages #######
+
+```
+
+*Nymphs*
+```{r}
+######## Ixodes 
+
+
+#Nymphs
+I_scap_N <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Nymph' & ticks_taxa2$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_N)
+#nrow(I_scap_N)
+sapply(I_scap_N, class)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+
+I_scap_N$collectDate <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-7)
+#head(I_scap_N)
+
+I_scap_N$collectDate <- as.factor(I_scap_N$collectDate)
+I_scap_N$plotID <- unlist(I_scap_N$plotID)
+I_scap_N$collectDate <- as.character(I_scap_N$collectDate)
+I_scap_N$Year <- substr(I_scap_N$collectDate, 1, nchar(I_scap_N$collectDate)-6)
+#head(I_scap_N)
+
+I_scap_N_2017 <- I_scap_N[which(I_scap_N$Year == '2017'),]
+#head(I_scap_N_2017)
+
+I_scap_N_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_N, FUN=sum)
+#head(I_scap_N_col, n=20)
+#nrow(I_scap_N_col)
+
+#View(I_scap_N)
+
+
+```
+
+*Larvae*
+```{r}
+#Larvae:
+I_scap_L <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Larva'),]
+#head(I_scap_L)
+#nrow(I_scap_L)
+
+sapply(I_scap_L, class)
+I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
+
+I_scap_L$collectDate <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-7)
+#head(I_scap_L)
+
+I_scap_L$collectDate <- as.factor(I_scap_L$collectDate)
+I_scap_L$plotID <- unlist(I_scap_L$plotID)
+
+
+I_scap_L$collectDate <- as.character(I_scap_L$collectDate)
+# extracting year out of collectDate
+I_scap_L$Year <- substr(I_scap_L$collectDate, 1, nchar(I_scap_L$collectDate)-6)
+
+#head(I_scap_L)
+
+I_scap_L_2017 <- I_scap_L[which(I_scap_L$Year == '2017'),]
+#head(I_scap_L_2017)
+
+I_scap_L_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_L, FUN=sum)
+#head(I_scap_L_col, n=20)
+#nrow(I_scap_L_col)
+
+###View(I_scap_L_col)
+
+
+#Adults
+I_scap_A <- ticks_taxa2[which(ticks_taxa2$sexOrAge == 'Female' | ticks_taxa2$sexOrAge == 'Male'),]
+I_scap_A <- I_scap_A[which(I_scap_A$scientificName == 'Ixodes scapularis'),]
+#head(I_scap_A)
+#nrow(I_scap_A)
+sapply(I_scap_A, class)
+I_scap_A$collectDate <- as.character(I_scap_A$collectDate)
+
+I_scap_A$collectDate <- substr(I_scap_A$collectDate, 1, nchar(I_scap_A$collectDate)-7)
+#head(I_scap_A)
+I_scap_A$collectDate <- as.factor(I_scap_A$collectDate)
+I_scap_A$plotID <- unlist(I_scap_A$plotID)
+I_scap_A$collectDate <- as.character(I_scap_A$collectDate)
+I_scap_A$Year <- substr(I_scap_A$collectDate, 1, nchar(I_scap_A$collectDate)-6)
+#head(I_scap_A)
+
+I_scap_A_2017 <- I_scap_A[which(I_scap_A$Year == '2017'),]
+#head(I_scap_A_2017)
+
+I_scap_A_col <- aggregate(individualCount ~ plotID + collectDate + site + Year, data=I_scap_A, FUN=sum)
+#head(I_scap_A_col, n=20)
+#nrow(I_scap_A_col)
+
+
+
+```
+
+```{r}
+
+
+```
+

@@ -178,6 +178,35 @@ ggplot(smol_juv_MWMA, aes(x = week, y = log(individualCount), fill = sexOrAge))+
   ggsave("TickLifestagePhenologyMWMA_v1.pdf", dpi = 320)
 
   
+aggregate.smol.MWMA <- aggregate(individualCount ~ region + week + sexOrAge, data=smol_juv_MWMA, FUN=sum)
+ggplot(aggregate.smol.MWMA, aes(x = week, y = log(individualCount), fill = sexOrAge))+
+  geom_bar(stat = "identity") +
+  facet_wrap(~region, scale= "free_y", ncol = 1)+
+  scale_fill_manual(values = c('#6096c8', '#ffcc00'))+
+  labs(fill = "Life stage")+
+  theme_bw()+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 11, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 11))+
+  labs(y = 'Log(tick counts)\n 2016 - 2019', x = 'Weeks')+
+  xlim(17, 41)+
+  theme(legend.position = 'bottom', legend.box = 'horizontal')
+  ggsave("TickLifestagePhenologyMWMA_v3.pdf", dpi = 320)
+
+  ggplot(aggregate.smol.MWMA, aes(x = week, y = log(individualCount), fill = region))+
+  geom_bar(stat = "identity") +
+  facet_wrap(~sexOrAge, scale= "free_y", ncol = 1)+
+  #scale_fill_manual(values = c('#6096c8', '#ffcc00'))+
+  labs(fill = "Life stage")+
+  theme_bw()+
+  theme(strip.background = element_rect(fill = 'gray95'))+
+  theme(strip.text.x = element_text(face = 'bold')) +
+  theme(axis.title.y =  element_text(face = 'bold',size = 11, vjust = .5))+
+  theme(axis.title.x =  element_text(face = 'bold',size = 11))+
+  labs(y = 'Log(tick counts)\n 2016 - 2019', x = 'Weeks')+
+  xlim(17, 41)
+  
 ```
 
 
